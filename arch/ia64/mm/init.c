@@ -9,7 +9,6 @@
 #include <linux/init.h>
 
 #include <linux/dma-noncoherent.h>
-#include <linux/dmar.h>
 #include <linux/efi.h>
 #include <linux/elf.h>
 #include <linux/memblock.h>
@@ -24,10 +23,10 @@
 #include <linux/proc_fs.h>
 #include <linux/bitops.h>
 #include <linux/kexec.h>
-#include <linux/swiotlb.h>
 
 #include <asm/dma.h>
 #include <asm/io.h>
+#include <asm/machvec.h>
 #include <asm/numa.h>
 #include <asm/patch.h>
 #include <asm/pgalloc.h>
@@ -67,6 +66,7 @@ __ia64_sync_icache_dcache (pte_t pte)
 	flush_icache_range(addr, addr + page_size(page));
 	set_bit(PG_arch_1, &page->flags);	/* mark page as clean */
 }
+
 
 /*
  * Since DMA is i-cache coherent, any (complete) pages that were written via
@@ -631,17 +631,13 @@ mem_init (void)
 	BUG_ON(PTRS_PER_PMD * sizeof(pmd_t) != PAGE_SIZE);
 	BUG_ON(PTRS_PER_PTE * sizeof(pte_t) != PAGE_SIZE);
 
+#ifdef CONFIG_PCI
 	/*
-	 * This needs to be called _after_ the command line has been parsed but
-	 * _before_ any drivers that may need the PCI DMA interface are
-	 * initialized or bootmem has been freed.
+	 * This needs to be called _after_ the command line has been parsed but _before_
+	 * any drivers that may need the PCI DMA interface are initialized or bootmem has
+	 * been freed.
 	 */
-#ifdef CONFIG_INTEL_IOMMU
-	detect_intel_iommu();
-	if (!iommu_detected)
-#endif
-#ifdef CONFIG_SWIOTLB
-		swiotlb_init(1);
+	platform_dma_init();
 #endif
 
 #ifdef CONFIG_FLATMEM
