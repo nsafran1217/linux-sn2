@@ -488,6 +488,15 @@ void __init sn_setup(char **cmdline_p)
 	sn_timer_init();
 
 	/*
+	 * Register SN2 DMA operations.  Must be done before any
+	 * drivers that use DMA are initialized.
+	 */
+	{
+		extern void sn_dma_init(void);
+		sn_dma_init();
+	}
+
+	/*
 	 * set pm_power_off to a SAL call to allow
 	 * sn machines to power off. The SAL call can be replaced
 	 * by an ACPI interface call when ACPI is fully implemented
