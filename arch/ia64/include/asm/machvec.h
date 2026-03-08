@@ -20,6 +20,7 @@ static inline int ia64_platform_is(const char *name)
 }
 
 #define ia64_platform_name	"sn2"
+#define ia64_platform_is	ia64_platform_is
 
 #else /* !CONFIG_IA64_SGI_SN2 */
 
@@ -29,6 +30,7 @@ static inline int ia64_platform_is(const char *name)
 }
 
 #define ia64_platform_name	"dig"
+#define ia64_platform_is	ia64_platform_is
 
 #endif /* CONFIG_IA64_SGI_SN2 */
 

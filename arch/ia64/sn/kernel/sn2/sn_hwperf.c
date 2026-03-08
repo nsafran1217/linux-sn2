@@ -45,6 +45,7 @@
 #include <asm/sn/geo.h>
 #include <asm/sn/sn2/sn_hwperf.h>
 #include <asm/sn/addrs.h>
+#include <asm/machvec.h>
 
 static void *sn_hwperf_salheap = NULL;
 static int sn_hwperf_obj_cnt = 0;

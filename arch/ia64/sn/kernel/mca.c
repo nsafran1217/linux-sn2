@@ -14,6 +14,7 @@
 #include <asm/mca.h>
 #include <asm/sal.h>
 #include <asm/sn/sn_sal.h>
+#include <asm/machvec.h>
 
 /*
  * Interval for calling SAL to poll for errors that do NOT cause error

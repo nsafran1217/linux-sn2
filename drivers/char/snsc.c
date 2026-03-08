@@ -27,6 +27,7 @@
 #include <asm/sn/module.h>
 #include <asm/sn/geo.h>
 #include <asm/sn/nodepda.h>
+#include <asm/machvec.h>
 #include "snsc.h"
 
 #define SYSCTL_BASENAME	"snsc"

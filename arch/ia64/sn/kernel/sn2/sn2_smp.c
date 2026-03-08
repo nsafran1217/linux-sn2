@@ -29,6 +29,7 @@
 #include <asm/sal.h>
 #include <asm/delay.h>
 #include <asm/io.h>
+#include <asm/machvec.h>
 #include <asm/smp.h>
 #include <asm/tlb.h>
 #include <asm/numa.h>

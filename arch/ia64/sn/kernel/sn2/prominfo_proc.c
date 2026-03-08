@@ -17,6 +17,7 @@
 #include <asm/sn/sn_sal.h>
 #include <asm/sn/sn_cpuid.h>
 #include <asm/sn/addrs.h>
+#include <asm/machvec.h>
 
 MODULE_DESCRIPTION("PROM version reporting for /proc");
 MODULE_AUTHOR("Chad Talbott");

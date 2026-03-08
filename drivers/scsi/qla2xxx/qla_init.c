@@ -17,6 +17,10 @@
 #include <asm/prom.h>
 #endif
 
+#ifdef CONFIG_IA64
+#include <asm/machvec.h>
+#endif
+
 #include <target/target_core_base.h>
 #include "qla_target.h"
 

@@ -381,7 +381,7 @@
 #define NVRAM_DELAY()			udelay(500)	/* 2 microseconds */
 
 #if defined(__ia64__) && !defined(ia64_platform_is)
-#define ia64_platform_is(foo)		(!strcmp(x, platform_name))
+#include <asm/machvec.h>
 #endif
 
 

@@ -19,6 +19,8 @@
 #include <linux/rwsem.h>
 #include <linux/slab.h>
 
+#include <asm/machvec.h>
+
 #define IOC3_PCI_SIZE 0x100000
 
 static LIST_HEAD(ioc3_devices);

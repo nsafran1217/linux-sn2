@@ -53,6 +53,7 @@
 #include <asm/sn/io.h>
 #include <asm/sn/bte.h>
 #include <asm/sn/shubio.h>
+#include <asm/machvec.h>
 
 
 #define FETCHOP_ID	"SGI Fetchop,"

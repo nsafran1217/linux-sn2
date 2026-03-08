@@ -35,6 +35,7 @@
 #include <asm/io.h>
 #include <asm/sn/simulator.h>
 #include <asm/sn/sn_sal.h>
+#include <asm/machvec.h>
 
 /* number of characters we can transmit to the SAL console at a time */
 #define SN_SAL_MAX_CHARS 120

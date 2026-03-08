@@ -33,6 +33,7 @@
 #include <asm/sn/addrs.h>
 #include <asm/sn/intr.h>
 #include <asm/sn/tiocx.h>
+#include <asm/machvec.h>
 #include "mbcs.h"
 
 #define MBCS_DEBUG 0

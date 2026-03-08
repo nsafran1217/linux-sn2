@@ -23,6 +23,7 @@
 #include <asm/sn/tiocx.h>
 #include <asm/sn/l1.h>
 #include <asm/sn/module.h>
+#include <asm/machvec.h>
 #include "tio.h"
 #include "xtalk/xwidgetdev.h"
 #include "xtalk/hubdev.h"
