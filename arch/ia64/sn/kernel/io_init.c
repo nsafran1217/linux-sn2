@@ -150,6 +150,7 @@ void
 sn_io_slot_fixup(struct pci_dev *dev)
 {
 	int idx;
+	int ret;
 	struct resource *res;
 	unsigned long size;
 	struct pcidev_info *pcidev_info;
@@ -198,10 +199,24 @@ sn_io_slot_fixup(struct pci_dev *dev)
 		/* Ensure resource is marked as assigned so parent lookups succeed */
 		res->flags &= ~IORESOURCE_UNSET;
 
-		if (res->flags & IORESOURCE_IO)
-			insert_resource(&ioport_resource, res);
-		else
-			insert_resource(&iomem_resource, res);
+		if (res->flags & IORESOURCE_IO) {
+			ret = insert_resource(&ioport_resource, res);
+			if (ret) {
+				dev_warn(&dev->dev,
+					 "SN: failed to insert IO resource %d %pR, forcing parent\n",
+					 idx, res);
+				res->parent = &ioport_resource;
+			}
+		} else {
+			ret = insert_resource(&iomem_resource, res);
+			if (ret) {
+				dev_warn(&dev->dev,
+					 "SN: failed to insert MEM resource %d %pR, forcing parent\n",
+					 idx, res);
+				res->parent = &iomem_resource;
+			}
+		}
+
 		/*
 		 * If ROM, mark as shadowed in PROM.
 		 */
