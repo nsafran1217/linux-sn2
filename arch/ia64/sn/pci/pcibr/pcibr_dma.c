@@ -235,7 +235,7 @@ pcibr_dma_unmap(struct pci_dev *hwdev, dma_addr_t dma_handle, int direction)
  * unlike the PIC Device(x) Write Request Buffer Flush register.
  */
 
-void sn_dma_flush(u64 addr)
+void sn_dma_flush(unsigned long addr)
 {
 	nasid_t nasid;
 	int is_tio;

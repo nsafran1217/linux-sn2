@@ -75,6 +75,10 @@ void __sn_mmiowb(void)
 	volatile unsigned long *adr = pda->pio_write_status_addr;
 	unsigned long val = pda->pio_write_status_val;
 
+	/*fix for commit 49ca6462fc9e0f5a67cd96eeddd844efc3fb33b9*/
+	if (adr == NULL)
+        return;
+
 	while ((*adr & SH_PIO_WRITE_STATUS_PENDING_WRITE_COUNT_MASK) != val)
 		cpu_relax();
 }

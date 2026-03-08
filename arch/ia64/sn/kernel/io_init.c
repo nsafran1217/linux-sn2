@@ -195,6 +195,9 @@ sn_io_slot_fixup(struct pci_dev *dev)
 		if (res->parent && res->parent->child)
 			release_resource(res);
 
+		/* Ensure resource is marked as assigned so parent lookups succeed */
+		res->flags &= ~IORESOURCE_UNSET;
+
 		if (res->flags & IORESOURCE_IO)
 			insert_resource(&ioport_resource, res);
 		else
