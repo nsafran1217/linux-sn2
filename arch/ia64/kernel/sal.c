@@ -15,6 +15,7 @@
 #include <linux/string.h>
 
 #include <asm/delay.h>
+#include <asm/machvec.h>
 #include <asm/page.h>
 #include <asm/sal.h>
 #include <asm/pal.h>
@@ -110,6 +111,13 @@ check_versions (struct ia64_sal_systab *systab)
 		sal_revision = SAL_VERSION_CODE(2, 8);
 		sal_version = SAL_VERSION_CODE(0, 0);
 	}
+
+	if (ia64_platform_is("sn2") && (sal_revision == SAL_VERSION_CODE(2, 9)))
+		/*
+		 * SGI Altix has hard-coded version 2.9 in their prom
+		 * but they actually implement 3.2, so let's fix it here.
+		 */
+		sal_revision = SAL_VERSION_CODE(3, 2);
 }
 
 static void __init
