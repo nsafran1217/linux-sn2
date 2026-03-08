@@ -1,9 +1,0 @@
-diff a/arch/ia64/mm/init.c b/arch/ia64/mm/init.c	(rejected hunks)
-@@ -81,7 +81,6 @@
- 		set_bit(PG_arch_1, &pfn_to_page(pfn)->flags);
- 	} while (++pfn <= PHYS_PFN(paddr + size - 1));
- }
--#endif
- 
- inline void
- ia64_set_rbs_bot (void)
