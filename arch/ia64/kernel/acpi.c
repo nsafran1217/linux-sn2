@@ -31,6 +31,7 @@
 #include <acpi/processor.h>
 #include <asm/io.h>
 #include <asm/iosapic.h>
+#include <asm/machvec.h>
 #include <asm/page.h>
 #include <asm/numa.h>
 #include <asm/sal.h>
@@ -333,7 +334,7 @@ get_processor_proximity_domain(struct acpi_srat_cpu_affinity *pa)
 	int pxm;
 
 	pxm = pa->proximity_domain_lo;
-	if (acpi_srat_revision >= 2)
+	if (ia64_platform_is("sn2") || acpi_srat_revision >= 2)
 		pxm += pa->proximity_domain_hi[0] << 8;
 	return pxm;
 }
@@ -344,7 +345,7 @@ get_memory_proximity_domain(struct acpi_srat_mem_affinity *ma)
 	int pxm;
 
 	pxm = ma->proximity_domain;
-	if (acpi_srat_revision <= 1)
+	if (!ia64_platform_is("sn2") && acpi_srat_revision <= 1)
 		pxm &= 0xff;
 
 	return pxm;
@@ -636,8 +637,9 @@ int __init acpi_boot_init(void)
 
 	if (acpi_table_parse_madt
 	    (ACPI_MADT_TYPE_IO_SAPIC, acpi_parse_iosapic, NR_IOSAPICS) < 1) {
-		printk(KERN_ERR PREFIX
-		       "Error parsing MADT - no IOSAPIC entries\n");
+		if (!ia64_platform_is("sn2"))
+			printk(KERN_ERR PREFIX
+			       "Error parsing MADT - no IOSAPIC entries\n");
 	}
 
 	/* System-Level Interrupt Routing */

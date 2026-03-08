@@ -21,6 +21,7 @@
 #include <linux/gfp.h>
 #include <linux/pgtable.h>
 #include <asm/page.h>
+#include <asm/machvec.h>
 #include <asm/pal.h>
 #include <linux/atomic.h>
 #include <asm/tlbflush.h>
@@ -128,7 +129,14 @@ static int uncached_add_chunk(struct uncached_pool *uc_pool, int nid)
 
 	preempt_disable();
 
+#ifdef CONFIG_IA64_SGI_SN2
+	{
+		extern void sn_flush_all_caches(unsigned long, unsigned long);
+		sn_flush_all_caches(uc_addr, IA64_GRANULE_SIZE);
+	}
+#else
 	flush_icache_range(uc_addr, uc_addr + IA64_GRANULE_SIZE);
+#endif
 
 	/* flush the just introduced uncached translation from the TLB */
 	local_flush_tlb_all();

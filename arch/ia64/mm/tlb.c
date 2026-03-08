@@ -245,6 +245,7 @@ resetsema:
 }
 
 #ifdef CONFIG_SMP
+#ifndef CONFIG_IA64_SGI_SN2
 static void
 ia64_global_tlb_purge (struct mm_struct *mm, unsigned long start,
 		       unsigned long end, unsigned long nbits)
@@ -282,6 +283,7 @@ ia64_global_tlb_purge (struct mm_struct *mm, unsigned long start,
                 activate_context(active_mm);
         }
 }
+#endif /* !CONFIG_IA64_SGI_SN2 */
 #endif /* CONFIG_SMP */
 
 void
@@ -333,7 +335,13 @@ __flush_tlb_range (struct vm_area_struct *vma, unsigned long start,
 	preempt_disable();
 #ifdef CONFIG_SMP
 	if (mm != current->active_mm || cpumask_weight(mm_cpumask(mm)) != 1) {
+#ifdef CONFIG_IA64_SGI_SN2
+		extern void sn2_global_tlb_purge(struct mm_struct *, unsigned long,
+						 unsigned long, unsigned long);
+		sn2_global_tlb_purge(mm, start, end, nbits);
+#else
 		ia64_global_tlb_purge(mm, start, end, nbits);
+#endif
 		preempt_enable();
 		return;
 	}
