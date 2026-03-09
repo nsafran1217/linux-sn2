@@ -29,6 +29,7 @@
 #include <linux/nodemask.h>
 #include <linux/pm.h>
 #include <linux/efi.h>
+#include <linux/vmalloc.h>
 
 #include <asm/io.h>
 #include <asm/sal.h>
@@ -784,3 +785,21 @@ sn_kernel_launch_event(void)
 }
 EXPORT_SYMBOL(sn_prom_feature_available);
 
+/*
+ * SN2-specific module_alloc: allocate executable vmalloc memory WITHOUT
+ * VM_FLUSH_RESET_PERMS.
+ *
+ * That flag is useless on ia64 (set_memory_nx, set_memory_rw, and
+ * set_direct_map_*_noflush are all no-ops).  But it causes
+ * vm_remove_mappings() to force immediate global TLB flushes during
+ * vfree.  On SN2, these extra SHUB PTC.GA broadcasts during module
+ * init section cleanup interfere with concurrent PIO/MMIO traffic.
+ *
+ * See commit 868b104d7379 ("vmalloc: New flag for flush reset").
+ */
+void *module_alloc(unsigned long size)
+{
+	return __vmalloc_node_range(size, 1, VMALLOC_START, VMALLOC_END,
+			GFP_KERNEL, PAGE_KERNEL, 0,
+			NUMA_NO_NODE, __builtin_return_address(0));
+}

@@ -208,8 +208,12 @@ void
 pcibr_dma_unmap(struct pci_dev *hwdev, dma_addr_t dma_handle, int direction)
 {
 	struct pcidev_info *pcidev_info = SN_PCIDEV_INFO(hwdev);
-	struct pcibus_info *pcibus_info =
-	    (struct pcibus_info *)pcidev_info->pdi_pcibus_info;
+	struct pcibus_info *pcibus_info;
+
+	if (!pcidev_info)
+		return;
+
+	pcibus_info = (struct pcibus_info *)pcidev_info->pdi_pcibus_info;
 
 	if (IS_PCI32_MAPPED(dma_handle)) {
 		int ate_index;
@@ -359,6 +363,9 @@ pcibr_dma_map(struct pci_dev * hwdev, unsigned long phys_addr, size_t size, int 
 	dma_addr_t dma_handle;
 	struct pcidev_info *pcidev_info = SN_PCIDEV_INFO(hwdev);
 
+	if (!pcidev_info)
+		return 0;
+
 	/* SN cannot support DMA addresses smaller than 32 bits. */
 	if (hwdev->dma_mask < 0x7fffffff) {
 		return 0;
@@ -397,6 +404,9 @@ pcibr_dma_map_consistent(struct pci_dev * hwdev, unsigned long phys_addr,
 {
 	dma_addr_t dma_handle;
 	struct pcidev_info *pcidev_info = SN_PCIDEV_INFO(hwdev);
+
+	if (!pcidev_info)
+		return 0;
 
 	if (hwdev->dev.coherent_dma_mask == ~0UL) {
 		dma_handle = pcibr_dmatrans_direct64(pcidev_info, phys_addr,
