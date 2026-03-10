@@ -2746,6 +2746,14 @@ ioc4_serial_core_attach(struct pci_dev *pdev, int port_type)
 		the_port->ops = &ioc4_ops;
 		the_port->irq = control->ic_irq;
 		the_port->dev = &pdev->dev;
+		/*
+		 * Linux 6.6+ serial core creates a controller device per
+		 * unique (parent, ctrl_id) pair.  The IOC4 has two uart_drivers
+		 * (rs232 and rs422) sharing the same PCI device.  Use
+		 * port_type_idx as ctrl_id so each driver gets its own
+		 * controller device in sysfs, avoiding duplicate names.
+		 */
+		the_port->ctrl_id = port_type_idx;
 		spin_lock_init(&the_port->lock);
 		if (uart_add_one_port(u_driver, the_port) < 0) {
 			printk(KERN_WARNING

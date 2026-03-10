@@ -31,6 +31,7 @@
 #include <linux/delay.h> /* for mdelay */
 #include <linux/miscdevice.h>
 #include <linux/serial_core.h>
+#include <linux/platform_device.h>
 
 #include <asm/io.h>
 #include <asm/sn/simulator.h>
@@ -807,6 +808,22 @@ static int __init sn_sal_init(void)
 	sal_console_port.sc_port.fifosize = SN_SAL_MAX_CHARS;
 	sal_console_port.sc_port.ops = &sn_console_ops;
 	sal_console_port.sc_port.line = 0;
+
+	/*
+	 * Linux 6.6+ serial core requires port->dev to be non-NULL for the
+	 * serial base controller layer (serial_base_ctrl_add).  Create a
+	 * minimal platform device to satisfy this requirement.  The SAL
+	 * console is a firmware-provided virtual device with no physical
+	 * hardware backing, so this is purely structural.
+	 */
+	{
+		static struct platform_device *sn_console_pdev;
+
+		sn_console_pdev = platform_device_register_simple("sn_console",
+								  0, NULL, 0);
+		if (!IS_ERR(sn_console_pdev))
+			sal_console_port.sc_port.dev = &sn_console_pdev->dev;
+	}
 
 	if (uart_add_one_port(&sal_console_uart, &sal_console_port.sc_port) < 0) {
 		/* error - not sure what I'd do - so I'll do nothing */
