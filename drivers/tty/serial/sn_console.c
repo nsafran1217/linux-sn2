@@ -302,6 +302,8 @@ static void snp_stop_rx(struct uart_port *port)
  */
 static void snp_start_tx(struct uart_port *port)
 {
+	if (uart_circ_empty(&port->state->xmit))
+		return;
 	if (sal_console_port.sc_ops->sal_wakeup_transmit)
 		sal_console_port.sc_ops->sal_wakeup_transmit(&sal_console_port,
 							     TRANSMIT_BUFFERED);
