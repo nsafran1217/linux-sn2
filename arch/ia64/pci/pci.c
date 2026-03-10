@@ -371,6 +371,12 @@ void pcibios_fixup_bus(struct pci_bus *b)
 	}
 	list_for_each_entry(dev, &b->devices, bus_list)
 		pcibios_fixup_device_resources(dev);
+#ifdef CONFIG_IA64_SGI_SN2
+	{
+		extern void sn_pci_fixup_bus(struct pci_bus *);
+		sn_pci_fixup_bus(b);
+	}
+#endif
 }
 
 void pcibios_add_bus(struct pci_bus *bus)

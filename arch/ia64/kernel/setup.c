@@ -261,11 +261,11 @@ __initcall(register_memory);
  * in kdump case. See the comment in sba_init() in sba_iommu.c.
  *
  * So, the only machvec that really supports loading the kdump kernel
- * over 4 GB is "uv".
+ * over 4 GB is "uv" and "sn2".
  */
 static int __init check_crashkernel_memory(unsigned long pbase, size_t size)
 {
-	if (is_uv_system())
+	if (IS_ENABLED(CONFIG_IA64_SGI_SN2) || is_uv_system())
 		return 1;
 	else
 		return pbase < (1UL << 32);
@@ -487,11 +487,20 @@ io_port_init (void)
 static inline int __init
 early_console_setup (char *cmdline)
 {
+	int earlycons = 0;
+
+#ifdef CONFIG_SERIAL_SGI_L1_CONSOLE
+	{
+		extern int sn_serial_console_early_setup(void);
+		if (!sn_serial_console_early_setup())
+			earlycons++;
+	}
+#endif
 #ifdef CONFIG_EFI_PCDP
 	if (!efi_setup_pcdp_console(cmdline))
-		return 0;
+		earlycons++;
 #endif
-	return -1;
+	return (earlycons) ? 0 : -1;
 }
 
 static void __init
@@ -629,14 +638,21 @@ setup_arch (char **cmdline_p)
 	 */
 	ROOT_DEV = MKDEV(SCSI_DISK0_MAJOR, 2);
 
+#ifdef CONFIG_IA64_SGI_SN2
+	{
+		extern void sn_setup(char **);
+		sn_setup(cmdline_p);
+	}
+#else
 	if (is_uv_system())
 		uv_setup(cmdline_p);
 #ifdef CONFIG_SMP
 	else
 		init_smp_config();
 #endif
-
 	screen_info_setup();
+#endif /* CONFIG_IA64_SGI_SN2 */
+
 	paging_init();
 
 	clear_sched_clock_stable();
@@ -1065,6 +1081,12 @@ cpu_init (void)
 		ia64_patch_phys_stack_reg(num_phys_stacked*8 + 8);
 		max_num_phys_stacked = num_phys_stacked;
 	}
+#ifdef CONFIG_IA64_SGI_SN2
+	{
+		extern void sn_cpu_init(void);
+		sn_cpu_init();
+	}
+#endif
 }
 
 void __init arch_cpu_finalize_init(void)
