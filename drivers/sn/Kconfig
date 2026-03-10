@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: GPL-2.0-only
+#
+# Miscellaneous SN-specific devices
+#
+
+menu "SN Devices"
+	depends on SGI_SN
+
+endmenu
