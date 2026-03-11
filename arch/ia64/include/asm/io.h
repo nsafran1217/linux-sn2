@@ -265,6 +265,59 @@ extern void memset_io(volatile void __iomem *s, int c, long n);
 #define memcpy_fromio memcpy_fromio
 #define memcpy_toio memcpy_toio
 #define memset_io memset_io
+
+#ifdef CONFIG_IA64_SGI_SN2
+/*
+ * SN2 overrides port I/O and MMIO to route through SHUB.
+ * Undef the generic ia64 definitions and replace with SN2 versions
+ * BEFORE including asm-generic/io.h so it sees our definitions.
+ */
+#include <asm/sn/io.h>
+
+#undef inb
+#undef inw
+#undef inl
+#undef outb
+#undef outw
+#undef outl
+#undef insb
+#undef insw
+#undef insl
+#undef outsb
+#undef outsw
+#undef outsl
+
+#define inb(p)		___sn_inb(p)
+#define inw(p)		___sn_inw(p)
+#define inl(p)		___sn_inl(p)
+#define outb(v, p)	___sn_outb(v, p)
+#define outw(v, p)	___sn_outw(v, p)
+#define outl(v, p)	___sn_outl(v, p)
+
+#define insb(p, d, c)	do { unsigned char *_d = (d); int _c = (c); \
+			  while (_c--) *_d++ = inb(p); } while (0)
+#define insw(p, d, c)	do { unsigned short *_d = (d); int _c = (c); \
+			  while (_c--) { put_unaligned(inw(p), _d); _d++; } } while (0)
+#define insl(p, d, c)	do { unsigned int *_d = (d); int _c = (c); \
+			  while (_c--) { put_unaligned(inl(p), _d); _d++; } } while (0)
+#define outsb(p, s, c)	do { const unsigned char *_s = (s); int _c = (c); \
+			  while (_c--) outb(*_s++, p); } while (0)
+#define outsw(p, s, c)	do { const unsigned short *_s = (s); int _c = (c); \
+			  while (_c--) { outw(get_unaligned(_s), p); _s++; } } while (0)
+#define outsl(p, s, c)	do { const unsigned int *_s = (s); int _c = (c); \
+			  while (_c--) { outl(get_unaligned(_s), p); _s++; } } while (0)
+
+#define readb(a)	___sn_readb(a)
+#define readw(a)	___sn_readw(a)
+#define readl(a)	___sn_readl(a)
+#define readq(a)	___sn_readq(a)
+#define readb_relaxed(a)	___sn_readb_relaxed(a)
+#define readw_relaxed(a)	___sn_readw_relaxed(a)
+#define readl_relaxed(a)	___sn_readl_relaxed(a)
+#define readq_relaxed(a)	___sn_readq_relaxed(a)
+
+#endif /* CONFIG_IA64_SGI_SN2 */
+
 #define xlate_dev_mem_ptr xlate_dev_mem_ptr
 #include <asm-generic/io.h>
 #undef PCI_IOBASE
