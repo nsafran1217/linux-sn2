@@ -812,3 +812,29 @@ void *module_alloc(unsigned long size)
 			GFP_KERNEL, PAGE_KERNEL, 0,
 			NUMA_NO_NODE, __builtin_return_address(0));
 }
+
+/*
+ * SN2-specific module_memfree: clear VM_FLUSH_RESET_PERMS before vfree.
+ *
+ * Since v6.4, module_enable_x() calls module_set_memory() which
+ * unconditionally adds VM_FLUSH_RESET_PERMS to all module text sections
+ * via set_vm_flush_reset_perms().  This bypasses our module_alloc()
+ * override above that deliberately omits the flag.
+ *
+ * Clear the flag before freeing so that vfree() takes the lazy TLB
+ * invalidation path (remove_vm_area) instead of the aggressive
+ * vm_reset_perms() -> flush_tlb_kernel_range() path, which on SN2
+ * triggers SHUB PTC.GA broadcasts that interfere with concurrent
+ * PIO/MMIO traffic.
+ */
+void module_memfree(void *module_region)
+{
+	struct vm_struct *vm;
+
+	if (!module_region)
+		return;
+	vm = find_vm_area(module_region);
+	if (vm)
+		vm->flags &= ~VM_FLUSH_RESET_PERMS;
+	vfree(module_region);
+}
