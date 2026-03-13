@@ -357,7 +357,7 @@
 #include <scsi/scsi_host.h>
 #include <scsi/scsi_tcq.h>
 
-#if defined(CONFIG_IA64_GENERIC) || defined(CONFIG_IA64_SGI_SN2)
+#if defined(CONFIG_IA64_SGI_SN2)
 #include <asm/sn/io.h>
 #endif
 
@@ -1416,13 +1416,11 @@ qla1280_initialize_adapter(struct scsi_qla_host *ha)
 	ha->flags.reset_active = 0;
 	ha->flags.abort_isp_active = 0;
 
-#if defined(CONFIG_IA64_GENERIC) || defined(CONFIG_IA64_SGI_SN2)
-	if (ia64_platform_is("sn2")) {
-		printk(KERN_INFO "scsi(%li): Enabling SN2 PCI DMA "
-		       "dual channel lockup workaround\n", ha->host_no);
-		ha->flags.use_pci_vchannel = 1;
-		driver_setup.no_nvram = 1;
-	}
+#if defined(CONFIG_IA64_SGI_SN2)
+	printk(KERN_INFO "scsi(%li): Enabling SN2 PCI DMA "
+	       "dual channel lockup workaround\n", ha->host_no);
+	ha->flags.use_pci_vchannel = 1;
+	driver_setup.no_nvram = 1;
 #endif
 
 	/* TODO: implement support for the 1040 nvram format */
@@ -2247,12 +2245,10 @@ qla1280_nvram_config(struct scsi_qla_host *ha)
 	mb[1] = nv->firmware_feature.f.enable_fast_posting;
 	mb[1] |= nv->firmware_feature.f.report_lvd_bus_transition << 1;
 	mb[1] |= nv->firmware_feature.f.disable_synchronous_backoff << 5;
-#if defined(CONFIG_IA64_GENERIC) || defined (CONFIG_IA64_SGI_SN2)
-	if (ia64_platform_is("sn2")) {
-		printk(KERN_INFO "scsi(%li): Enabling SN2 PCI DMA "
-		       "workaround\n", ha->host_no);
-		mb[1] |= nv->firmware_feature.f.unused_9 << 9; /* XXX */
-	}
+#if defined (CONFIG_IA64_SGI_SN2)
+	printk(KERN_INFO "scsi(%li): Enabling SN2 PCI DMA "
+	       "workaround\n", ha->host_no);
+	mb[1] |= nv->firmware_feature.f.unused_9 << 9; /* XXX */	
 #endif
 	status |= qla1280_mailbox_command(ha, BIT_1 | BIT_0, mb);
 
@@ -2883,7 +2879,7 @@ qla1280_64bit_start_scsi(struct scsi_qla_host *ha, struct srb * sp)
 				break;
 
 			dma_handle = sg_dma_address(s);
-#if defined(CONFIG_IA64_GENERIC) || defined(CONFIG_IA64_SGI_SN2)
+#if defined(CONFIG_IA64_SGI_SN2)
 			if (ha->flags.use_pci_vchannel)
 				sn_pci_set_vchan(ha->pdev,
 						 (unsigned long *)&dma_handle,
@@ -2945,7 +2941,7 @@ qla1280_64bit_start_scsi(struct scsi_qla_host *ha, struct srb * sp)
 				if (cnt == 5)
 					break;
 				dma_handle = sg_dma_address(s);
-#if defined(CONFIG_IA64_GENERIC) || defined(CONFIG_IA64_SGI_SN2)
+#if defined(CONFIG_IA64_SGI_SN2)
 				if (ha->flags.use_pci_vchannel)
 					sn_pci_set_vchan(ha->pdev,
 							 (unsigned long *)&dma_handle,
