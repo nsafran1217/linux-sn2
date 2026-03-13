@@ -11,7 +11,6 @@
 
 #include <asm/sn/io.h>
 
-#ifdef CONFIG_IA64_GENERIC
 
 #undef __sn_inb
 #undef __sn_inw
@@ -98,4 +97,3 @@ unsigned long __sn_readq_relaxed(void __iomem *addr)
 	return ___sn_readq_relaxed(addr);
 }
 
-#endif

@@ -343,34 +343,31 @@ mspec_init(void)
 	 * memory drivers should both be valid on all ia64 hardware
 	 */
 #ifdef CONFIG_SGI_SN
-	if (ia64_platform_is("sn2")) {
-		is_sn2 = 1;
-		if (is_shub2()) {
-			ret = -ENOMEM;
-			for_each_node_state(nid, N_ONLINE) {
-				int actual_nid;
-				int nasid;
-				unsigned long phys;
-
-				scratch_page[nid] = uncached_alloc_page(nid, 1);
-				if (scratch_page[nid] == 0)
-					goto free_scratch_pages;
-				phys = __pa(scratch_page[nid]);
-				nasid = get_node_number(phys);
-				actual_nid = nasid_to_cnodeid(nasid);
-				if (actual_nid != nid)
-					goto free_scratch_pages;
-			}
-		}
-
-		ret = misc_register(&fetchop_miscdev);
-		if (ret) {
-			printk(KERN_ERR
-			       "%s: failed to register device %i\n",
-			       FETCHOP_ID, ret);
-			goto free_scratch_pages;
+	is_sn2 = 1;
+	if (is_shub2()) {
+		ret = -ENOMEM;
+		for_each_node_state(nid, N_ONLINE) {
+			int actual_nid;
+			int nasid;
+			unsigned long phys;
+			scratch_page[nid] = uncached_alloc_page(nid, 1);
+			if (scratch_page[nid] == 0)
+				goto free_scratch_pages;
+			phys = __pa(scratch_page[nid]);
+			nasid = get_node_number(phys);
+			actual_nid = nasid_to_cnodeid(nasid);
+			if (actual_nid != nid)
+				goto free_scratch_pages;
 		}
 	}
+	ret = misc_register(&fetchop_miscdev);
+	if (ret) {
+		printk(KERN_ERR
+		       "%s: failed to register device %i\n",
+		       FETCHOP_ID, ret);
+		goto free_scratch_pages;
+	}
+
 #endif
 	ret = misc_register(&cached_miscdev);
 	if (ret) {
