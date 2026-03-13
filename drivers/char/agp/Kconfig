@@ -152,7 +152,7 @@ config AGP_EFFICEON
 
 config AGP_SGI_TIOCA
         tristate "SGI TIO chipset AGP support"
-        depends on AGP && (IA64_SGI_SN2 || IA64_GENERIC)
+        depends on AGP && (IA64_SGI_SN2)
         help
           This option gives you AGP GART support for the SGI TIO chipset
           for IA64 processors.
