@@ -453,7 +453,7 @@ config RANDOM_TRUST_BOOTLOADER
 
 config SGI_SNSC
 	bool "SGI Altix system controller communication support"
-	depends on (IA64_SGI_SN2 || IA64_GENERIC)
+	depends on (IA64_SGI_SN2)
 	help
 	  If you have an SGI Altix and you want to enable system
 	  controller communication from user space (you want this!),
@@ -461,7 +461,7 @@ config SGI_SNSC
 
 config SGI_TIOCX
        bool "SGI TIO CX driver support"
-       depends on (IA64_SGI_SN2 || IA64_GENERIC)
+       depends on (IA64_SGI_SN2)
        help
          If you have an SGI Altix and you have fpga devices attached
          to your TIO, say Y here, otherwise say N.
