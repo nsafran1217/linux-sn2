@@ -507,6 +507,7 @@ early_console_setup (char *cmdline)
 	return (earlycons) ? 0 : -1;
 }
 
+#ifndef CONFIG_IA64_SGI_SN2
 static void __init
 screen_info_setup(void)
 {
@@ -539,6 +540,7 @@ screen_info_setup(void)
 	screen_info.orig_video_isVGA = 1;	/* XXX fake */
 	screen_info.orig_video_ega_bx = 3;	/* XXX fake */
 }
+#endif /* !CONFIG_IA64_SGI_SN2 */
 
 static inline void
 mark_bsp_online (void)
