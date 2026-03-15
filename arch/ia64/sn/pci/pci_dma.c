@@ -50,7 +50,8 @@
  */
 static int sn_dma_supported(struct device *dev, u64 mask)
 {
-	BUG_ON(!dev_is_pci(dev));
+	if (!dev_is_pci(dev))
+		return 0;
 
 	if (mask < 0x7fffffff)
 		return 0;
@@ -66,7 +67,8 @@ static int sn_dma_supported(struct device *dev, u64 mask)
  */
 int sn_dma_set_mask(struct device *dev, u64 dma_mask)
 {
-	BUG_ON(!dev_is_pci(dev));
+	if (!dev_is_pci(dev))
+		return 0;
 
 	if (!sn_dma_supported(dev, dma_mask))
 		return 0;
@@ -98,12 +100,14 @@ static void *sn_dma_alloc_coherent(struct device *dev, size_t size,
 	void *cpuaddr;
 	unsigned long phys_addr;
 	int node;
-	struct pci_dev *pdev = to_pci_dev(dev);
+	struct pci_dev *pdev;
 	struct pcidev_info *pcidev_info;
 	struct sn_pcibus_provider *provider;
 
-	BUG_ON(!dev_is_pci(dev));
+	if (!dev_is_pci(dev))
+		return NULL;
 
+	pdev = to_pci_dev(dev);
 	pcidev_info = SN_PCIDEV_INFO(pdev);
 	if (unlikely(!pcidev_info))
 		return NULL;
@@ -162,17 +166,20 @@ static void *sn_dma_alloc_coherent(struct device *dev, size_t size,
 static void sn_dma_free_coherent(struct device *dev, size_t size, void *cpu_addr,
 				 dma_addr_t dma_handle, unsigned long attrs)
 {
-	struct pci_dev *pdev = to_pci_dev(dev);
+	struct pci_dev *pdev;
 	struct pcidev_info *pcidev_info;
 	struct sn_pcibus_provider *provider;
 
-	BUG_ON(!dev_is_pci(dev));
+	if (!dev_is_pci(dev))
+		goto free;
 
+	pdev = to_pci_dev(dev);
 	pcidev_info = SN_PCIDEV_INFO(pdev);
 	if (likely(pcidev_info)) {
 		provider = pcidev_info->pdi_provider;
 		provider->dma_unmap(pdev, dma_handle, 0);
 	}
+free:
 	free_pages((unsigned long)cpu_addr, get_order(size));
 }
 
@@ -208,12 +215,14 @@ static dma_addr_t sn_dma_map_page(struct device *dev, struct page *page,
 	void *cpu_addr = page_address(page) + offset;
 	dma_addr_t dma_addr;
 	unsigned long phys_addr;
-	struct pci_dev *pdev = to_pci_dev(dev);
+	struct pci_dev *pdev;
 	struct pcidev_info *pcidev_info;
 	struct sn_pcibus_provider *provider;
 
-	BUG_ON(!dev_is_pci(dev));
+	if (!dev_is_pci(dev))
+		return DMA_MAPPING_ERROR;
 
+	pdev = to_pci_dev(dev);
 	pcidev_info = SN_PCIDEV_INFO(pdev);
 	if (unlikely(!pcidev_info))
 		return DMA_MAPPING_ERROR;
@@ -250,12 +259,14 @@ static void sn_dma_unmap_page(struct device *dev, dma_addr_t dma_addr,
 			      size_t size, enum dma_data_direction dir,
 			      unsigned long attrs)
 {
-	struct pci_dev *pdev = to_pci_dev(dev);
+	struct pci_dev *pdev;
 	struct pcidev_info *pcidev_info;
 	struct sn_pcibus_provider *provider;
 
-	BUG_ON(!dev_is_pci(dev));
+	if (!dev_is_pci(dev))
+		return;
 
+	pdev = to_pci_dev(dev);
 	pcidev_info = SN_PCIDEV_INFO(pdev);
 	if (unlikely(!pcidev_info))
 		return;
@@ -279,13 +290,15 @@ static void sn_dma_unmap_sg(struct device *dev, struct scatterlist *sgl,
 			    unsigned long attrs)
 {
 	int i;
-	struct pci_dev *pdev = to_pci_dev(dev);
+	struct pci_dev *pdev;
 	struct pcidev_info *pcidev_info;
 	struct sn_pcibus_provider *provider;
 	struct scatterlist *sg;
 
-	BUG_ON(!dev_is_pci(dev));
+	if (!dev_is_pci(dev))
+		return;
 
+	pdev = to_pci_dev(dev);
 	pcidev_info = SN_PCIDEV_INFO(pdev);
 	if (unlikely(!pcidev_info))
 		return;
@@ -319,13 +332,15 @@ static int sn_dma_map_sg(struct device *dev, struct scatterlist *sgl,
 {
 	unsigned long phys_addr;
 	struct scatterlist *saved_sg = sgl, *sg;
-	struct pci_dev *pdev = to_pci_dev(dev);
+	struct pci_dev *pdev;
 	struct pcidev_info *pcidev_info;
 	struct sn_pcibus_provider *provider;
 	int i;
 
-	BUG_ON(!dev_is_pci(dev));
+	if (!dev_is_pci(dev))
+		return 0;
 
+	pdev = to_pci_dev(dev);
 	pcidev_info = SN_PCIDEV_INFO(pdev);
 	if (unlikely(!pcidev_info))
 		return 0;
