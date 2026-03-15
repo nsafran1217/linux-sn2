@@ -788,17 +788,58 @@ sn_kernel_launch_event(void)
 EXPORT_SYMBOL(sn_prom_feature_available);
 
 /*
- * NOTE: In kernels before 6.12, SN2 overrode module_alloc() and
- * module_memfree() to suppress VM_FLUSH_RESET_PERMS, which causes
- * aggressive SHUB PTC.GA TLB broadcasts during module loading that
- * can interfere with concurrent PIO/MMIO traffic.
+ * SN2 module notifier: suppress VM_FLUSH_RESET_PERMS on module memory.
  *
- * In 6.12+, module_alloc/module_memfree were replaced by the execmem
- * subsystem (execmem_alloc/execmem_free) which hardcodes
- * VM_FLUSH_RESET_PERMS and does not allow architecture overrides of
- * the vm_flags.  On ia64 set_memory_nx/rw/set_direct_map are all
- * no-ops, so the vm_reset_perms() path only performs
- * flush_tlb_kernel_range() which may still cause SHUB interference
- * during module load.  If this proves problematic, USB and other
- * modular drivers should be built-in rather than loaded as modules.
+ * The execmem subsystem (6.12+) hardcodes VM_FLUSH_RESET_PERMS on all
+ * executable memory allocations, and module_set_memory() in strict_rwx.c
+ * re-adds it via set_vm_flush_reset_perms().  When module memory is freed,
+ * vfree() sees this flag and calls vm_reset_perms() which triggers
+ * flush_tlb_kernel_range().  On SN2, this causes SHUB PTC.GA TLB
+ * broadcasts that can interfere with concurrent PIO/MMIO traffic.
+ *
+ * On ia64, set_memory_nx/rw/rox and set_direct_map are all no-ops, so
+ * vm_reset_perms() provides no real benefit — the flag is purely harmful.
+ *
+ * This notifier clears VM_FLUSH_RESET_PERMS from all module memory
+ * regions at two points:
+ *   MODULE_STATE_LIVE  — before init sections are freed
+ *   MODULE_STATE_GOING — before core sections are freed during unload
  */
+#ifdef CONFIG_MODULES
+static void sn2_clear_module_flush_perms(struct module *mod)
+{
+	struct vm_struct *vm;
+
+	for_each_mod_mem_type(type) {
+		if (!mod->mem[type].base)
+			continue;
+		vm = find_vm_area(mod->mem[type].base);
+		if (vm)
+			vm->flags &= ~VM_FLUSH_RESET_PERMS;
+	}
+}
+
+static int sn2_module_notify(struct notifier_block *nb, unsigned long val,
+			     void *data)
+{
+	struct module *mod = data;
+
+	switch (val) {
+	case MODULE_STATE_LIVE:
+	case MODULE_STATE_GOING:
+		sn2_clear_module_flush_perms(mod);
+		break;
+	}
+	return NOTIFY_DONE;
+}
+
+static struct notifier_block sn2_module_nb = {
+	.notifier_call = sn2_module_notify,
+};
+
+static int __init sn2_module_notifier_init(void)
+{
+	return register_module_notifier(&sn2_module_nb);
+}
+late_initcall(sn2_module_notifier_init);
+#endif /* CONFIG_MODULES */
