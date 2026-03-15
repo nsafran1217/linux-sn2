@@ -1189,6 +1189,16 @@ config PATA_LEGACY
 	  ports and allows them to be accessed via the new ATA layer.
 
 	  If unsure, say N.
+config PATA_SGI_IOC4
+	tristate "SGI IOC4 PATA support"
+	depends on IA64_SGI_SN2 && SGI_IOC4
+	help
+	  This option enables support for the PATA interface on the
+	  SGI IOC4 chipset, found on IO9 and IO10 cards in SGI Altix
+	  (SN2) systems.  The IOC4 provides a single ATA channel with
+	  MWDMA2 and PIO support.
+
+	  If you have an SGI Altix with an IOC4-based card, say Y or M.
 
 endif # ATA_SFF
 endif # ATA
