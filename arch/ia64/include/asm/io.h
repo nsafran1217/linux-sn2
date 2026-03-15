@@ -291,18 +291,18 @@ extern void memset_io(volatile void __iomem *s, int c, long n);
 #define outw(v, p)	___sn_outw(v, p)
 #define outl(v, p)	___sn_outl(v, p)
 
-#define insb(p, d, c)	do { unsigned char *_d = (d); int _c = (c); \
-			  while (_c--) *_d++ = inb(p); } while (0)
-#define insw(p, d, c)	do { unsigned short *_d = (d); int _c = (c); \
-			  while (_c--) { put_unaligned(inw(p), _d); _d++; } } while (0)
-#define insl(p, d, c)	do { unsigned int *_d = (d); int _c = (c); \
-			  while (_c--) { put_unaligned(inl(p), _d); _d++; } } while (0)
-#define outsb(p, s, c)	do { const unsigned char *_s = (s); int _c = (c); \
-			  while (_c--) outb(*_s++, p); } while (0)
-#define outsw(p, s, c)	do { const unsigned short *_s = (s); int _c = (c); \
-			  while (_c--) { outw(get_unaligned(_s), p); _s++; } } while (0)
-#define outsl(p, s, c)	do { const unsigned int *_s = (s); int _c = (c); \
-			  while (_c--) { outl(get_unaligned(_s), p); _s++; } } while (0)
+#define insb(p, d, c)	do { unsigned char *_d = (void *)(d); int _c = (c); \
+ 			  while (_c--) *_d++ = inb(p); } while (0)
+#define insw(p, d, c)	do { unsigned short *_d = (void *)(d); int _c = (c); \
+ 			  while (_c--) { put_unaligned(inw(p), _d); _d++; } } while (0)
+#define insl(p, d, c)	do { unsigned int *_d = (void *)(d); int _c = (c); \
+ 			  while (_c--) { put_unaligned(inl(p), _d); _d++; } } while (0)
+#define outsb(p, s, c)	do { const unsigned char *_s = (const void *)(s); int _c = (c); \
+ 			  while (_c--) outb(*_s++, p); } while (0)
+#define outsw(p, s, c)	do { const unsigned short *_s = (const void *)(s); int _c = (c); \
+ 			  while (_c--) { outw(get_unaligned(_s), p); _s++; } } while (0)
+#define outsl(p, s, c)	do { const unsigned int *_s = (const void *)(s); int _c = (c); \
+ 			  while (_c--) { outl(get_unaligned(_s), p); _s++; } } while (0)
 
 #define readb(a)	___sn_readb(a)
 #define readw(a)	___sn_readw(a)
