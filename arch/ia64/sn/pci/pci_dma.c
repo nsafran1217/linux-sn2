@@ -207,14 +207,11 @@ free:
  * TODO: simplify our interface;
  *       figure out how to save dmamap handle so can use two step.
  */
-static dma_addr_t sn_dma_map_page(struct device *dev, struct page *page,
-				  unsigned long offset, size_t size,
-				  enum dma_data_direction dir,
+static dma_addr_t sn_dma_map_phys(struct device *dev, phys_addr_t phys,
+				  size_t size, enum dma_data_direction dir,
 				  unsigned long attrs)
 {
-	void *cpu_addr = page_address(page) + offset;
 	dma_addr_t dma_addr;
-	unsigned long phys_addr;
 	struct pci_dev *pdev;
 	struct pcidev_info *pcidev_info;
 	struct sn_pcibus_provider *provider;
@@ -228,12 +225,11 @@ static dma_addr_t sn_dma_map_page(struct device *dev, struct page *page,
 		return DMA_MAPPING_ERROR;
 	provider = pcidev_info->pdi_provider;
 
-	phys_addr = __pa(cpu_addr);
 	if (attrs & DMA_ATTR_WRITE_BARRIER)
-		dma_addr = provider->dma_map_consistent(pdev, phys_addr,
+		dma_addr = provider->dma_map_consistent(pdev, phys,
 							size, SN_DMA_ADDR_PHYS);
 	else
-		dma_addr = provider->dma_map(pdev, phys_addr, size,
+		dma_addr = provider->dma_map(pdev, phys, size,
 					     SN_DMA_ADDR_PHYS);
 
 	if (!dma_addr) {
@@ -255,7 +251,7 @@ static dma_addr_t sn_dma_map_page(struct device *dev, struct page *page,
  * by @dma_handle into the coherence domain.  On SN, we're always cache
  * coherent, so we just need to free any ATEs associated with this mapping.
  */
-static void sn_dma_unmap_page(struct device *dev, dma_addr_t dma_addr,
+static void sn_dma_unmap_phys(struct device *dev, dma_addr_t dma_addr,
 			      size_t size, enum dma_data_direction dir,
 			      unsigned long attrs)
 {
@@ -498,8 +494,8 @@ int sn_pci_legacy_write(struct pci_bus *bus, u16 port, u32 val, u8 size)
 static const struct dma_map_ops sn_dma_ops = {
 	.alloc			= sn_dma_alloc_coherent,
 	.free			= sn_dma_free_coherent,
-	.map_page		= sn_dma_map_page,
-	.unmap_page		= sn_dma_unmap_page,
+	.map_phys		= sn_dma_map_phys,
+	.unmap_phys		= sn_dma_unmap_phys,
 	.map_sg			= sn_dma_map_sg,
 	.unmap_sg		= sn_dma_unmap_sg,
 	.dma_supported		= sn_dma_supported,
