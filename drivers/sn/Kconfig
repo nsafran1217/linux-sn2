@@ -1,0 +1,77 @@
+# SPDX-License-Identifier: GPL-2.0-only
+#
+# SGI SN (Altix) device drivers
+#
+
+menu "SN Devices"
+	depends on SGI_SN
+
+config MSPEC
+	tristate "Memory special (fetchop/uncached) driver"
+	depends on IA64_SGI_SN2
+	help
+	  This driver allows privileged processes to map uncached and
+	  fetchop memory.  If you have an SGI Altix system, say Y or M.
+	  Otherwise, say N.
+
+config SGI_IOC4
+	tristate "SGI IOC4 Base IO support"
+	depends on PCI
+	help
+	  This option enables basic support for the IOC4 chip on certain
+	  SGI IO controller cards (IO9, IO10, and PCI-RT).  This option
+	  does not enable any specific functions on such a card, but provides
+	  necessary infrastructure for other drivers to utilize.
+
+	  If you have an SGI Altix with an IOC4-based card say Y.
+	  Otherwise say N.
+
+config SGI_SNSC
+	bool "SGI Altix system controller communication support"
+	depends on IA64_SGI_SN2
+	help
+	  If you have an SGI Altix and you want to enable system
+	  controller communication from user space (you want this!),
+	  say Y.  Otherwise, say N.
+
+config SGI_TIOCX
+	bool "SGI TIO CX driver support"
+	depends on IA64_SGI_SN2
+	help
+	  If you have an SGI Altix and you have fpga devices attached
+	  to your TIO, say Y here, otherwise say N.
+
+config SGI_MBCS
+	tristate "SGI FPGA Core Services driver support"
+	depends on SGI_TIOCX
+	help
+	  If you have an SGI Altix with an attached SABrick
+	  say Y or M here, otherwise say N.
+
+config AGP_SGI_TIOCA
+	tristate "SGI TIO chipset AGP support"
+	depends on AGP && IA64_SGI_SN2
+	help
+	  This option gives you AGP GART support for the SGI TIO chipset
+	  for IA64 processors.
+
+config SERIAL_SGI_L1_CONSOLE
+	bool "SGI Altix L1 serial console support"
+	depends on IA64_GENERIC || IA64_SGI_SN2
+	select SERIAL_CORE
+	select SERIAL_CORE_CONSOLE
+	help
+	  If you have an SGI Altix and you would like to use the system
+	  controller serial port as your console (you want this!),
+	  say Y.  Otherwise, say N.
+
+config SERIAL_SGI_IOC4
+	tristate "SGI IOC4 controller serial support"
+	depends on (IA64_GENERIC || IA64_SGI_SN2) && SGI_IOC4
+	select SERIAL_CORE
+	help
+	  If you have an SGI Altix with an IOC4 based Base IO card
+	  and wish to use the serial ports on this card, say Y.
+	  Otherwise, say N.
+
+endmenu

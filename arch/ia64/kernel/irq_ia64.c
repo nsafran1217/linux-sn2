@@ -625,9 +625,15 @@ init_IRQ (void)
 				    "irq_move");
 	}
 #endif
+#ifdef CONFIG_IA64_SGI_SN2
+	{
+		extern void sn_irq_init(void);
+		sn_irq_init();
+	}
+#endif
 }
 
-void
+void __weak
 ia64_send_ipi (int cpu, int vector, int delivery_mode, int redirect)
 {
 	void __iomem *ipi_addr;

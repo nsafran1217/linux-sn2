@@ -49,6 +49,13 @@ int arch_setup_msi_irq(struct pci_dev *pdev, struct msi_desc *desc)
 	unsigned long	dest_phys_id;
 	int	irq, vector;
 
+#ifdef CONFIG_IA64_SGI_SN2
+	{
+		extern int sn_setup_msi_irq(struct pci_dev *, struct msi_desc *);
+		return sn_setup_msi_irq(pdev, desc);
+	}
+#endif
+
 	irq = create_irq();
 	if (irq < 0)
 		return irq;
@@ -79,6 +86,13 @@ int arch_setup_msi_irq(struct pci_dev *pdev, struct msi_desc *desc)
 
 void arch_teardown_msi_irq(unsigned int irq)
 {
+#ifdef CONFIG_IA64_SGI_SN2
+	{
+		extern void sn_teardown_msi_irq(unsigned int);
+		sn_teardown_msi_irq(irq);
+		return;
+	}
+#endif
 	destroy_irq(irq);
 }
 

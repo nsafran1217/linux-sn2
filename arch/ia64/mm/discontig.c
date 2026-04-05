@@ -587,10 +587,12 @@ void call_pernode_memory(unsigned long start, unsigned long len, void *arg)
 
 void __init arch_zone_limits_init(unsigned long *max_zone_pfns)
 {
+#ifdef CONFIG_ZONE_DMA32
 	unsigned long max_dma;
 
 	max_dma = virt_to_phys((void *) MAX_DMA_ADDRESS) >> PAGE_SHIFT;
 	max_zone_pfns[ZONE_DMA32] = max_dma;
+#endif
 	max_zone_pfns[ZONE_NORMAL] = max_low_pfn;
 }
 
