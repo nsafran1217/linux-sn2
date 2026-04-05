@@ -1056,7 +1056,7 @@ struct scsi_qla_host {
 		uint32_t reset_active:1;		/* 3 */
 		uint32_t abort_isp_active:1;		/* 4 */
 		uint32_t disable_risc_code_load:1;	/* 5 */
-#ifdef __ia64__
+#ifdef CONFIG_IA64_SGI_SN2
 		uint32_t use_pci_vchannel:1;
 #endif
 	} flags;
