@@ -56,7 +56,7 @@ config IA64
 	select ARCH_CLOCKSOURCE_DATA
 	select GENERIC_TIME_VSYSCALL
 	select LEGACY_TIMER_TICK
-	select SWIOTLB
+	select SWIOTLB if !IA64_SGI_SN2
 	select SYSCTL_ARCH_UNALIGN_NO_WARN
 	select HAVE_MOD_ARCH_SPECIFIC
 	select MODULES_USE_ELF_RELA
@@ -66,7 +66,7 @@ config IA64
 	select NEED_SG_DMA_LENGTH
 	select NUMA if !FLATMEM
 	select PCI_MSI_ARCH_FALLBACKS if PCI_MSI
-	select ZONE_DMA32
+	select ZONE_DMA32 if !IA64_SGI_SN2
 	select FUNCTION_ALIGNMENT_32B
 	default y
 	help
@@ -180,6 +180,22 @@ config IA64_L1_CACHE_SHIFT
 	int
 	default "7" if MCKINLEY
 	default "6" if ITANIUM
+
+config IA64_SGI_SN2
+	bool "SGI-SN2 (Altix) support"
+	depends on !FLATMEM
+	select NUMA
+	select ACPI_NUMA
+	select IA64_UNCACHED_ALLOCATOR
+	help
+	  Selecting this option will add support for SGI Altix (SN2) systems.
+	  This builds a kernel with SN2 platform code including custom I/O,
+	  DMA, IRQ, and NUMA support for the SHUB interconnect.  If you have
+	  an SGI Altix system, say Y.  Otherwise, say N.
+
+config SGI_SN
+	def_bool y
+	depends on IA64_SGI_SN2
 
 config IA64_SGI_UV
 	bool "SGI-UV support"
@@ -356,6 +372,8 @@ config IA64_HP_AML_NFW
 	  kernel command line option.
 
 endmenu
+
+source "drivers/sn/Kconfig"
 
 config ARCH_SUPPORTS_KEXEC
 	def_bool !SMP || HOTPLUG_CPU

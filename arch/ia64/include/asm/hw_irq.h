@@ -150,7 +150,11 @@ static inline void ia64_native_resend_irq(unsigned int vector)
 static inline ia64_vector
 irq_to_vector (int irq)
 {
+#ifdef CONFIG_IA64_SGI_SN2
+	return (ia64_vector)irq;
+#else
 	return irq_cfg[irq].vector;
+#endif
 }
 
 /*
@@ -161,7 +165,11 @@ irq_to_vector (int irq)
 static inline unsigned int
 local_vector_to_irq (ia64_vector vec)
 {
+#ifdef CONFIG_IA64_SGI_SN2
+	return (unsigned int)vec;
+#else
 	return __this_cpu_read(vector_irq[vec]);
+#endif
 }
 
 #endif /* _ASM_IA64_HW_IRQ_H */
