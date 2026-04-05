@@ -121,6 +121,8 @@ obj-$(CONFIG_ATA_GENERIC)	+= ata_generic.o
 # Should be last libata driver
 obj-$(CONFIG_PATA_LEGACY)	+= pata_legacy.o
 
+obj-$(CONFIG_PATA_SGI_IOC4)	+= pata_sgiioc4.o
+
 libata-y	:= libata-core.o libata-scsi.o libata-eh.o \
 	libata-transport.o libata-trace.o
 libata-$(CONFIG_SATA_HOST)	+= libata-sata.o
