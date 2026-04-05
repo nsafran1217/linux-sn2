@@ -16,7 +16,7 @@
 #include <asm/prom.h>
 #endif
 
-#ifdef CONFIG_IA64
+#ifdef CONFIG_IA64_SGI_SN2
 #include <asm/machvec.h>
 #endif
 
