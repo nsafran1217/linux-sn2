@@ -644,6 +644,14 @@ int __cpu_disable(void)
 		return (-EBUSY);
 	}
 
+#ifdef CONFIG_IA64_SGI_SN2
+	{
+		extern int sn_cpu_disable_allowed(int cpu);
+		if (!sn_cpu_disable_allowed(cpu))
+			return -EBUSY;
+	}
+#endif
+
 	set_cpu_online(cpu, false);
 
 	if (migrate_platform_irqs(cpu)) {
