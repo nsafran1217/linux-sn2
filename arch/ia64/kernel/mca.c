@@ -607,7 +607,7 @@ out:
  *  Outputs
  *      None
  */
-static void
+void
 ia64_mca_register_cpev (int cpev)
 {
 	/* Register the CPE interrupt vector with SAL */
