@@ -7904,7 +7904,6 @@ static void qla24xx_nvram_wwn_from_ofw(scsi_qla_host_t *vha,
 	if (val && len >= WWN_SIZE)
 		memcpy(nv->node_name, val, WWN_SIZE);
 #endif
-
 }
 
 int
