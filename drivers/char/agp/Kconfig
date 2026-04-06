@@ -150,7 +150,6 @@ config AGP_EFFICEON
 	  This option gives you AGP support for the Transmeta Efficeon
 	  series processors with integrated northbridges.
 
-
 config INTEL_GTT
 	tristate
 	depends on X86 && PCI
