@@ -801,7 +801,6 @@ config SERIAL_CPM_CONSOLE
 	  your boot loader (lilo or loadlin) about how to pass options to the
 	  kernel at boot time.)
 
-
 config SERIAL_PIC32
 	tristate "Microchip PIC32 serial support"
 	depends on MACH_PIC32 || (MIPS && COMPILE_TEST)
@@ -902,7 +901,6 @@ config SERIAL_JSM
 
 	  To compile this driver as a module, choose M here: the
 	  module will be called jsm.
-
 
 config SERIAL_MSM
 	tristate "MSM on-chip serial port support"
