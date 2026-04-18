@@ -74,4 +74,12 @@ config SERIAL_SGI_IOC4
 	  and wish to use the serial ports on this card, say Y.
 	  Otherwise, say N.
 
+config SN2_PLX_GPU
+	bool "Setup PLX PCI Bridge windows"
+	depends on IA64_SGI_SN2
+	help
+	  Setup PLX Bridge windows prefetable windows address for 
+	  GPU with 256MB BAR. Say yes if you want to use a PCI-E GPU 
+	  in a PLX PCI bridge.
+
 endmenu
