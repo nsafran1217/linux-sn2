@@ -46,6 +46,9 @@
 #include <drm/ttm/ttm_pool.h>
 #include <drm/ttm/ttm_tt.h>
 #include <drm/ttm/ttm_bo.h>
+#ifdef CONFIG_IA64_SGI_SN2
+#include <asm/sn/arch.h>
+#endif
 
 #include "ttm_module.h"
 #include "ttm_pool_internal.h"
@@ -159,8 +162,31 @@ static struct page *ttm_pool_alloc_page(struct ttm_pool *pool, gfp_t gfp_flags,
 
 	if (!ttm_pool_uses_dma_alloc(pool)) {
 		p = alloc_pages_node(pool->nid, gfp_flags, order);
-		if (p)
+		if (p) {
 			p->private = order;
+#ifdef CONFIG_IA64_SGI_SN2
+			/* SN2: Flush WB dirty cache lines from page zeroing.
+			 *
+			 * The page allocator zeros pages through the WB
+			 * identity map (region 7), creating Modified cache
+			 * lines. These pages will be UC vmap/mmaped for GPU
+			 * DMA access. Without flushing, GPU DMA reads see
+			 * Modified lines → RDEXC interventions → FSB_PROTO_ERR.
+			 *
+			 * sn_flush_all_caches uses fc.i to writeback dirty
+			 * lines. One page = 32 cache lines — small enough
+			 * to not overload FSB. */
+			{
+				unsigned int i, nr = 1U << order;
+				for (i = 0; i < nr; i++) {
+					void *addr = page_address(p + i);
+					if (addr)
+						sn_flush_all_caches((long)addr,
+								    PAGE_SIZE);
+				}
+			}
+#endif
+		}
 		return p;
 	}
 

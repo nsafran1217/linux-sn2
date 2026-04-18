@@ -1377,6 +1377,14 @@ int radeon_device_init(struct radeon_device *rdev,
 	rdev->pdev->msi_addr_mask = DMA_BIT_MASK(dma_bits);
 	rdev->need_swiotlb = drm_need_swiotlb(dma_bits);
 
+#ifdef CONFIG_IA64_SGI_SN2
+	/* SN2: drm_need_swiotlb() false positive from NASID-encoded phys addrs.
+	 * With need_swiotlb=true, TTM uses dma_alloc_coherent which creates
+	 * barrier ATEs (PCI32_ATE_BAR). The PIC has only 1024 ATEs (16MB),
+	 * quickly exhausted under GPU load. Force streaming DMA (direct32). */
+	rdev->need_swiotlb = false;
+#endif
+
 	/* Registers mapping */
 	/* TODO: block userspace mapping of io register */
 	spin_lock_init(&rdev->mmio_idx_lock);
