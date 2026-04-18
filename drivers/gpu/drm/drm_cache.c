@@ -182,6 +182,16 @@ bool drm_need_swiotlb(int dma_bits)
 	struct resource *tmp;
 	resource_size_t max_iomem = 0;
 
+#ifdef CONFIG_IA64_SGI_SN2
+	/* SN2: False positive — NASID-encoded physical addresses make
+	 * max_iomem appear to exceed the DMA bit limit, but all memory
+	 * is DMA-reachable via PIC direct32 mapping regardless of NASID.
+	 * With swiotlb=true, TTM routes through dma_alloc_coherent which
+	 * exhausts the PIC's limited 1024 ATEs (16MB). */
+	return false;
+#endif
+
+
 	/*
 	 * Xen paravirtual hosts require swiotlb regardless of requested dma
 	 * transfer size.
