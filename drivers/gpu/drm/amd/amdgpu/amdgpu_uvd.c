@@ -1204,24 +1204,24 @@ int amdgpu_uvd_get_create_msg(struct amdgpu_ring *ring, uint32_t handle,
 {
 	struct amdgpu_device *adev = ring->adev;
 	struct amdgpu_bo *bo = adev->uvd.ib_bo;
-	uint32_t *msg;
+	u32 __iomem *msg;
 	int i;
 
 	msg = amdgpu_bo_kptr(bo);
 	/* stitch together an UVD create msg */
-	msg[0] = cpu_to_le32(0x00000de4);
-	msg[1] = cpu_to_le32(0x00000000);
-	msg[2] = cpu_to_le32(handle);
-	msg[3] = cpu_to_le32(0x00000000);
-	msg[4] = cpu_to_le32(0x00000000);
-	msg[5] = cpu_to_le32(0x00000000);
-	msg[6] = cpu_to_le32(0x00000000);
-	msg[7] = cpu_to_le32(0x00000780);
-	msg[8] = cpu_to_le32(0x00000440);
-	msg[9] = cpu_to_le32(0x00000000);
-	msg[10] = cpu_to_le32(0x01b37000);
+	writel((__force u32)cpu_to_le32(0x00000de4), &msg[0]);
+	writel(0, &msg[1]);
+	writel((__force u32)cpu_to_le32(handle), &msg[2]);
+	writel(0, &msg[3]);
+	writel(0, &msg[4]);
+	writel(0, &msg[5]);
+	writel(0, &msg[6]);
+	writel((__force u32)cpu_to_le32(0x00000780), &msg[7]);
+	writel((__force u32)cpu_to_le32(0x00000440), &msg[8]);
+	writel(0, &msg[9]);
+	writel((__force u32)cpu_to_le32(0x01b37000), &msg[10]);
 	for (i = 11; i < 1024; ++i)
-		msg[i] = cpu_to_le32(0x0);
+		writel(0, &msg[i]);
 
 	return amdgpu_uvd_send_msg(ring, bo, true, fence);
 
@@ -1232,7 +1232,7 @@ int amdgpu_uvd_get_destroy_msg(struct amdgpu_ring *ring, uint32_t handle,
 {
 	struct amdgpu_device *adev = ring->adev;
 	struct amdgpu_bo *bo = NULL;
-	uint32_t *msg;
+	u32 __iomem *msg;
 	int r, i;
 
 	if (direct) {
@@ -1245,12 +1245,12 @@ int amdgpu_uvd_get_destroy_msg(struct amdgpu_ring *ring, uint32_t handle,
 
 	msg = amdgpu_bo_kptr(bo);
 	/* stitch together an UVD destroy msg */
-	msg[0] = cpu_to_le32(0x00000de4);
-	msg[1] = cpu_to_le32(0x00000002);
-	msg[2] = cpu_to_le32(handle);
-	msg[3] = cpu_to_le32(0x00000000);
+	writel((__force u32)cpu_to_le32(0x00000de4), &msg[0]);
+	writel((__force u32)cpu_to_le32(0x00000002), &msg[1]);
+	writel((__force u32)cpu_to_le32(handle), &msg[2]);
+	writel(0, &msg[3]);
 	for (i = 4; i < 1024; ++i)
-		msg[i] = cpu_to_le32(0x0);
+		writel(0, &msg[i]);
 
 	r = amdgpu_uvd_send_msg(ring, bo, direct, fence);
 
