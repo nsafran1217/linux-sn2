@@ -307,6 +307,18 @@ pgprot_t ttm_io_prot(struct ttm_buffer_object *bo, struct ttm_resource *res,
 		caching = res->bus.caching;
 	}
 
+#ifdef CONFIG_IA64_SGI_SN2
+	/* SN2: Force uncacheable for ALL buffer types:
+	 * - Device memory (VRAM, !use_tt): WC causes PIO write buffers
+	 *   to never flush through the SHub→PIC path.
+	 * - System memory (GTT, use_tt): WB creates Modified cache lines
+	 *   that trigger RDEXC directory interventions when the GPU reads
+	 *   via DMA, overflowing the FSB → FSB_PROTO_ERR → MCA.
+	 * UC writes go directly to memory — no cache, no interventions.
+	 * See SGI Altix Porting Guide (007-4520-007) pages 89-90. */
+	return pgprot_noncached(tmp);
+#endif
+
 	return ttm_prot_from_caching(caching, tmp);
 }
 EXPORT_SYMBOL(ttm_io_prot);
