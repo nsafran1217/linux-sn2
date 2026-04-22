@@ -82,4 +82,25 @@ config SN2_PLX_GPU
 	  GPU with 256MB BAR. Say yes if you want to use a PCI-E GPU 
 	  in a PLX PCI bridge.
 
+config SN2_DMA_POOL
+	bool "SN2 DMA pool for GPU direct32 allocations"
+	depends on IA64_SGI_SN2
+	default y
+	help
+	  On SN2, the PIC bridge's direct32 DMA window covers only the
+	  bottom 2 GB of node memory.  Allocations above that fall back
+	  to the PIC's 1024-entry ATE pool (16 MB total capacity), which
+	  is easily exhausted under GPU workloads.
+
+	  Selecting this option reserves a fixed region at the bottom
+	  of node memory at boot and routes TTM GPU-page allocations
+	  through it.  Pool pages are always inside the direct32 window
+	  and consume zero ATE resources.
+
+	  Controlled by kernel command line:
+	    sn2_dma_pool=SIZE  — pool size (default 768M, max 2G,
+	                         'off' or '0' disables)
+
+	  If unsure, say Y.
+
 endmenu

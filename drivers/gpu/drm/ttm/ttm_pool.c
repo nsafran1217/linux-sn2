@@ -50,6 +50,10 @@
 #include <asm/sn/arch.h>
 #endif
 
+#ifdef CONFIG_SN2_DMA_POOL
+#include <asm/sn/sn_dma_pool.h>
+#endif
+
 #include "ttm_module.h"
 #include "ttm_pool_internal.h"
 
@@ -161,6 +165,42 @@ static struct page *ttm_pool_alloc_page(struct ttm_pool *pool, gfp_t gfp_flags,
 		gfp_flags &= ~__GFP_DIRECT_RECLAIM;
 
 	if (!ttm_pool_uses_dma_alloc(pool)) {
+#ifdef CONFIG_SN2_DMA_POOL
+		/* SN2: try the reserved direct32-window pool first.  Pool
+		 * pages have phys addresses inside the PIC direct32 window
+		 * and map with zero ATE cost.  A pool miss returns NULL and
+		 * we fall through to the normal allocator (which will
+		 * produce pages outside the window that go via ATE).
+		 * When order > 0 is requested and we miss, TTM's retry
+		 * logic will drop order and call us again — see
+		 * ttm_pool_alloc's fallback loop. */
+		if (sn_dma_pool_active()) {
+			p = sn_dma_pool_alloc(order, gfp_flags);
+			if (p) {
+				p->private = order;
+#ifdef CONFIG_IA64_SGI_SN2
+				/* Same WB-flush rationale as the regular
+				 * alloc_pages_node path: GPU will read via
+				 * UC mapping and must not see CPU-cached
+				 * Modified lines.  sn_dma_pool_alloc honored
+				 * __GFP_ZERO already, but the zero went
+				 * through the WB identity map. */
+				{
+					unsigned int i, nr = 1U << order;
+					for (i = 0; i < nr; i++) {
+						void *addr = page_address(p + i);
+						if (addr)
+							sn_flush_all_caches(
+								(long)addr,
+								PAGE_SIZE);
+					}
+				}
+#endif
+				return p;
+			}
+			/* pool miss — fall through */
+		}
+#endif
 		p = alloc_pages_node(pool->nid, gfp_flags, order);
 		if (p) {
 			p->private = order;
@@ -236,6 +276,14 @@ static void ttm_pool_free_page(struct ttm_pool *pool, enum ttm_caching caching,
 #endif
 
 	if (!pool || !ttm_pool_uses_dma_alloc(pool)) {
+#ifdef CONFIG_SN2_DMA_POOL
+		/* If this page came from the SN2 reserved pool, return
+		 * it there; otherwise hand it to the buddy allocator. */
+		if (sn_dma_pool_contains(p)) {
+			sn_dma_pool_free(p, order);
+			return;
+		}
+#endif
 		__free_pages(p, order);
 		return;
 	}
@@ -1041,7 +1089,12 @@ long ttm_pool_backup(struct ttm_pool *pool, struct ttm_tt *tt,
 			if (flags->purge) {
 				shrunken += num_pages;
 				page->private = 0;
-				__free_pages(page, order);
+#ifdef CONFIG_SN2_DMA_POOL
+				if (sn_dma_pool_contains(page))
+					sn_dma_pool_free(page, order);
+				else
+#endif
+					__free_pages(page, order);
 				memset(tt->pages + i, 0,
 				       num_pages * sizeof(*tt->pages));
 			}

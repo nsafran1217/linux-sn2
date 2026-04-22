@@ -52,6 +52,7 @@
 #include "xtalk/xwidgetdev.h"
 #include "xtalk/hubdev.h"
 #include <asm/sn/klconfig.h>
+#include <asm/sn/sn_dma_pool.h>
 
 
 DEFINE_PER_CPU(struct pda_s, pda_percpu);
@@ -372,6 +373,15 @@ void __init sn_setup(char **cmdline_p)
 	long status, ticks_per_sec, drift;
 	u32 version = sn_sal_rev();
 	extern void sn_cpu_init(void);
+
+	/*
+	 * Reserve the SN2 GPU DMA pool (if enabled).  Must run while
+	 * memblock is still active (before the buddy allocator is
+	 * brought up in mem_init) and before anything else has grabbed
+	 * the bottom of node memory.  find_memory() has already
+	 * populated memblock by the time we get here.
+	 */
+	sn_dma_pool_reserve();
 
 	sn2_rtc_initial = rtc_time();
 	ia64_sn_plat_set_error_handling_features();	// obsolete

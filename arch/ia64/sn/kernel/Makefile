@@ -17,3 +17,4 @@ obj-y				+= setup.o bte.o bte_error.o irq.o mca.o idle.o \
 obj-$(CONFIG_SGI_TIOCX)		+= tiocx.o
 obj-$(CONFIG_PCI_MSI)		+= msi_sn.o
 obj-$(CONFIG_SN2_PLX_GPU) += plx_bridge_fixup.o
+obj-$(CONFIG_SN2_DMA_POOL)	+= sn_dma_pool.o
