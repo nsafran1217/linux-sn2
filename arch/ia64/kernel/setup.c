@@ -55,6 +55,7 @@
 
 #include <asm/efi.h>
 #include <asm/mca.h>
+#include <asm/machvec.h>
 #include <asm/meminit.h>
 #include <asm/mmu.h>
 #include <asm/page.h>
@@ -267,10 +268,9 @@ __initcall(register_memory);
  */
 static int __init check_crashkernel_memory(unsigned long pbase, size_t size)
 {
-	if (IS_ENABLED(CONFIG_IA64_SGI_SN2) || is_uv_system())
+	if (ia64_platform_is("sn2") || is_uv_system())
 		return 1;
-	else
-		return pbase < (1UL << 32);
+	return pbase < (1UL << 32);
 }
 
 static void __init setup_crashkernel(unsigned long total, int *n)
@@ -510,7 +510,6 @@ early_console_setup (char *cmdline)
 	return (earlycons) ? 0 : -1;
 }
 
-#ifndef CONFIG_IA64_SGI_SN2
 static void __init
 primary_display_setup(void)
 {
@@ -543,7 +542,6 @@ primary_display_setup(void)
 	sysfb_primary_display.screen.orig_video_isVGA = 1;	/* XXX fake */
 	sysfb_primary_display.screen.orig_video_ega_bx = 3;	/* XXX fake */
 }
-#endif /* !CONFIG_IA64_SGI_SN2 */
 
 static inline void
 mark_bsp_online (void)
@@ -578,11 +576,23 @@ setup_arch (char **cmdline_p)
 	uv_probe_system_type();
 	parse_early_param();
 
+#ifdef CONFIG_IA64_SGI_SN2
+	/*
+	 * Detect platform via the EFI ACPI 2.0 RSDP -> XSDT OEM ID.  Must
+	 * run before early_console_setup(), because the SN2 early console
+	 * hook (sn_serial_console_early_setup) tests ia64_platform_is("sn2")
+	 * and needs the static key already set on SN2 hardware.  Runs
+	 * without ACPICA; acpi_table_init() has not been called yet.
+	 */
+	ia64_platform_detect();
+#endif
+
 	if (early_console_setup(*cmdline_p) == 0)
 		mark_bsp_online();
 
 	/* Initialize the ACPI boot-time table parser */
 	acpi_table_init();
+
 	early_acpi_boot_init();
 #ifdef CONFIG_ACPI_NUMA
 	acpi_numa_init();
@@ -644,21 +654,20 @@ setup_arch (char **cmdline_p)
 	ROOT_DEV = MKDEV(SCSI_DISK0_MAJOR, 2);
 
 #ifdef CONFIG_IA64_SGI_SN2
-	{
+	if (ia64_platform_is("sn2")) {
 		extern void sn_setup(char **);
 		sn_setup(cmdline_p);
-	}
-#else
-	if (is_uv_system())
-		uv_setup(cmdline_p);
-#ifdef CONFIG_SMP
-	else
-		init_smp_config();
+	} else
 #endif
-
-	primary_display_setup();
-#endif /* CONFIG_IA64_SGI_SN2 */
-
+	{
+		if (is_uv_system())
+			uv_setup(cmdline_p);
+#ifdef CONFIG_SMP
+		else
+			init_smp_config();
+#endif
+		primary_display_setup();
+	}
 
 	clear_sched_clock_stable();
 }
@@ -1087,7 +1096,7 @@ cpu_init (void)
 		max_num_phys_stacked = num_phys_stacked;
 	}
 #ifdef CONFIG_IA64_SGI_SN2
-	{
+	if (ia64_platform_is("sn2")) {
 		extern void sn_cpu_init(void);
 		sn_cpu_init();
 	}

@@ -56,7 +56,7 @@ config IA64
 	select ARCH_CLOCKSOURCE_DATA
 	select GENERIC_TIME_VSYSCALL
 	select LEGACY_TIMER_TICK
-	select SWIOTLB if !IA64_SGI_SN2
+	select SWIOTLB
 	select SYSCTL_ARCH_UNALIGN_NO_WARN
 	select HAVE_MOD_ARCH_SPECIFIC
 	select MODULES_USE_ELF_RELA
@@ -66,7 +66,7 @@ config IA64
 	select NEED_SG_DMA_LENGTH
 	select NUMA if !FLATMEM
 	select PCI_MSI_ARCH_FALLBACKS if PCI_MSI
-	select ZONE_DMA32 if !IA64_SGI_SN2
+	select ZONE_DMA32
 	select FUNCTION_ALIGNMENT_32B
 	default y
 	help
@@ -184,14 +184,21 @@ config IA64_L1_CACHE_SHIFT
 config IA64_SGI_SN2
 	bool "SGI-SN2 (Altix) support"
 	depends on !FLATMEM
+	default y
 	select NUMA
 	select ACPI_NUMA
 	select IA64_UNCACHED_ALLOCATOR
 	help
-	  Selecting this option will add support for SGI Altix (SN2) systems.
-	  This builds a kernel with SN2 platform code including custom I/O,
-	  DMA, IRQ, and NUMA support for the SHUB interconnect.  If you have
-	  an SGI Altix system, say Y.  Otherwise, say N.
+	  Selecting this option builds a kernel that supports SGI Altix (SN2)
+	  systems.  The platform is detected at boot via the ACPI XSDT OEM ID;
+	  if it reads 'SGI', SN2-specific code paths (SHUB I/O, IPI, TLB
+	  purge, mmiowb) are enabled at runtime via a static key.  On non-SN2
+	  hardware, the static key stays disabled and the generic paths run.
+
+	  Enabling this option lets a single kernel image boot on both SN2
+	  and non-SN2 IA-64 machines.  If you never intend to run on an SGI
+	  Altix, saying N produces a slightly smaller kernel.  The default
+	  is Y.
 
 config SGI_SN
 	def_bool y

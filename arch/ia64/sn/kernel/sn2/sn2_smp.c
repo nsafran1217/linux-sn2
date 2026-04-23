@@ -575,13 +575,3 @@ static void __exit sn2_ptc_exit(void)
 module_init(sn2_ptc_init);
 module_exit(sn2_ptc_exit);
 #endif /* CONFIG_PROC_FS */
-
-/*
- * Override the weak default ia64_send_ipi with SN2's SHUB-based IPI.
- * This avoids needing machvec dispatch for IPI sending.
- */
-void ia64_send_ipi(int cpuid, int vector, int delivery_mode, int redirect)
-{
-	sn2_send_IPI(cpuid, vector, delivery_mode, redirect);
-}
-

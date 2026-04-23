@@ -14,6 +14,7 @@
 
 #include <asm/ptrace.h>
 #include <asm/smp.h>
+#include <asm/machvec.h>
 
 typedef u8 ia64_vector;
 
@@ -151,10 +152,10 @@ static inline ia64_vector
 irq_to_vector (int irq)
 {
 #ifdef CONFIG_IA64_SGI_SN2
-	return (ia64_vector)irq;
-#else
-	return irq_cfg[irq].vector;
+	if (ia64_is_sn2())
+		return (ia64_vector)irq;
 #endif
+	return irq_cfg[irq].vector;
 }
 
 /*
@@ -166,10 +167,10 @@ static inline unsigned int
 local_vector_to_irq (ia64_vector vec)
 {
 #ifdef CONFIG_IA64_SGI_SN2
-	return (unsigned int)vec;
-#else
-	return __this_cpu_read(vector_irq[vec]);
+	if (ia64_is_sn2())
+		return (unsigned int)vec;
 #endif
+	return __this_cpu_read(vector_irq[vec]);
 }
 
 #endif /* _ASM_IA64_HW_IRQ_H */

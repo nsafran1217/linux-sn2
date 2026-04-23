@@ -27,6 +27,7 @@
 #include <asm/page.h>
 #include <asm/io.h>
 #include <asm/sal.h>
+#include <asm/machvec.h>
 #include <asm/smp.h>
 #include <asm/irq.h>
 #include <asm/hw_irq.h>
@@ -371,7 +372,7 @@ void pcibios_fixup_bus(struct pci_bus *b)
 	list_for_each_entry(dev, &b->devices, bus_list)
 		pcibios_fixup_device_resources(dev);
 #ifdef CONFIG_IA64_SGI_SN2
-	{
+	if (ia64_platform_is("sn2")) {
 		extern void sn_pci_fixup_bus(struct pci_bus *);
 		sn_pci_fixup_bus(b);
 	}

@@ -36,6 +36,8 @@ obj-$(CONFIG_STACKTRACE)	+= stacktrace.o
 obj-$(CONFIG_IA64_ESI)		+= esi.o esi_stub.o # must be in kernel proper
 obj-$(CONFIG_INTEL_IOMMU)	+= pci-dma.o
 obj-$(CONFIG_IA64_UNCACHED_ALLOCATOR) += uncached.o
+obj-$(CONFIG_IA64_SGI_SN2)	+= machvec.o
+
 
 obj-$(CONFIG_ELF_CORE)		+= elfcore.o
 

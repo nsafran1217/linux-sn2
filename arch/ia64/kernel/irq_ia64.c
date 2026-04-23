@@ -38,6 +38,7 @@
 #include <asm/intrinsics.h>
 #include <asm/io.h>
 #include <asm/hw_irq.h>
+#include <asm/machvec.h>
 #include <asm/tlbflush.h>
 
 #include "irq.h"
@@ -626,15 +627,19 @@ init_IRQ (void)
 	}
 #endif
 #ifdef CONFIG_IA64_SGI_SN2
-	{
+	if (ia64_platform_is("sn2")) {
 		extern void sn_irq_init(void);
 		sn_irq_init();
 	}
 #endif
 }
 
-void __weak
-ia64_send_ipi (int cpu, int vector, int delivery_mode, int redirect)
+/*
+ * Native (non-SN2) IPI send path.  Writes the delivery descriptor to
+ * the per-CPU IPI mailbox derived from ipi_base_addr.
+ */
+static void
+__ia64_send_ipi_native(int cpu, int vector, int delivery_mode, int redirect)
 {
 	void __iomem *ipi_addr;
 	unsigned long ipi_data;
@@ -650,4 +655,18 @@ ia64_send_ipi (int cpu, int vector, int delivery_mode, int redirect)
 	ipi_addr = ipi_base_addr + ((phys_cpu_id << 4) | ((redirect & 1) << 3));
 
 	writeq(ipi_data, ipi_addr);
+}
+
+void
+ia64_send_ipi(int cpu, int vector, int delivery_mode, int redirect)
+{
+#ifdef CONFIG_IA64_SGI_SN2
+	extern void sn2_send_IPI(int cpu, int vector, int delivery_mode, int redirect);
+
+	if (ia64_is_sn2()) {
+		sn2_send_IPI(cpu, vector, delivery_mode, redirect);
+		return;
+	}
+#endif
+	__ia64_send_ipi_native(cpu, vector, delivery_mode, redirect);
 }

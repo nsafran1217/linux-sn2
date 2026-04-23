@@ -33,6 +33,7 @@
 #include <asm/processor.h>
 #include <asm/sal.h>
 #include <asm/tlb.h>
+#include <asm/machvec.h>
 
 static struct {
 	u64 mask;		/* mask of supported purge page-sizes */
@@ -245,7 +246,6 @@ resetsema:
 }
 
 #ifdef CONFIG_SMP
-#ifndef CONFIG_IA64_SGI_SN2
 static void
 ia64_global_tlb_purge (struct mm_struct *mm, unsigned long start,
 		       unsigned long end, unsigned long nbits)
@@ -283,7 +283,6 @@ ia64_global_tlb_purge (struct mm_struct *mm, unsigned long start,
                 activate_context(active_mm);
         }
 }
-#endif /* !CONFIG_IA64_SGI_SN2 */
 #endif /* CONFIG_SMP */
 
 void
@@ -338,10 +337,11 @@ __flush_tlb_range (struct vm_area_struct *vma, unsigned long start,
 #ifdef CONFIG_IA64_SGI_SN2
 		extern void sn2_global_tlb_purge(struct mm_struct *, unsigned long,
 						 unsigned long, unsigned long);
-		sn2_global_tlb_purge(mm, start, end, nbits);
-#else
-		ia64_global_tlb_purge(mm, start, end, nbits);
+		if (ia64_is_sn2())
+			sn2_global_tlb_purge(mm, start, end, nbits);
+		else
 #endif
+			ia64_global_tlb_purge(mm, start, end, nbits);
 		preempt_enable();
 		return;
 	}
