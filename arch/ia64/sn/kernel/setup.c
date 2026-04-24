@@ -439,7 +439,47 @@ void __init sn_setup(char **cmdline_p)
 	}
 #endif				/* def(CONFIG_VT) && def(CONFIG_VGA_CONSOLE) */
 
-	MAX_DMA_ADDRESS = PAGE_OFFSET + MAX_PHYS_MEMORY;
+	/*
+	 * Set MAX_DMA_ADDRESS to the end of the PIC direct32 DMA window.
+	 *
+	 * The PIC bridge's p_dir_map register is programmed by PROM so
+	 * that direct-mapped 32-bit PCI addresses (0x80000000..0xFFFFFFFF)
+	 * translate to the bottom 2 GB of NASID-0 cacheable memory:
+	 *
+	 *   processor phys 0x3000000000 .. 0x307FFFFFFF
+	 *
+	 * PCI DMA to addresses above this window falls back to the PIC's
+	 * 1024-entry ATE pool (16 MB total reach, at 16 KB per ATE), which
+	 * is easily exhausted under GPU workloads (a single 2 MB TTM
+	 * compound page consumes 128 consecutive ATEs).
+	 *
+	 * Setting MAX_DMA_ADDRESS to the phys end of the direct32 window
+	 * has two effects in the boot path:
+	 *
+	 *   1. arch_zone_limits_init() uses MAX_DMA_ADDRESS to compute
+	 *      max_zone_pfns[ZONE_DMA32], so ZONE_DMA32 ends up containing
+	 *      exactly the node-0 memory that the direct32 window covers.
+	 *      Drivers that declare sub-64-bit DMA masks (e.g. amdgpu at
+	 *      40 bits) will have __GFP_DMA32 added to their TTM page
+	 *      allocations via dma_addressing_limited(), and those pages
+	 *      now land inside the direct32 window, consuming zero ATEs.
+	 *
+	 *   2. Boot-time memblock allocators (percpu, sparsemem, kasan)
+	 *      use __pa(MAX_DMA_ADDRESS) as a soft lower-bound ("prefer
+	 *      memory above this address").  With the new value, these
+	 *      allocations are pushed above the direct32 window, leaving
+	 *      the DMA-reachable region free for runtime DMA users.  The
+	 *      lower bound is treated as a hint — the allocator retries
+	 *      without it if no memory is found — so allocations still
+	 *      succeed even on tiny single-brick systems.
+	 *
+	 * The old value (PAGE_OFFSET + MAX_PHYS_MEMORY = PAGE_OFFSET +
+	 * 2^50) made ZONE_DMA32 meaningless on SN2 (it would have spanned
+	 * the entire address space), which is why ZONE_DMA32 was
+	 * historically excluded from SN2 builds via Kconfig.
+	 */
+
+	MAX_DMA_ADDRESS = PAGE_OFFSET + 0x3080000000UL;
 
 	/*
 	 * Build the tables for managing cnodes.
