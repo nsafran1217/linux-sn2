@@ -24,6 +24,7 @@ with a full size PCI-e slot. Any other bridges are untested*/
 
 #define PLX_VENDOR_ID   0x10b5
 #define PLX_8111_DEVICE_ID 0x8111
+#define PLX_8112_DEVICE_ID 0x8112
 
 static void sn2_plx_bridge_fixup(struct pci_dev *pdev)
 {
@@ -151,3 +152,4 @@ static void sn2_plx_bridge_fixup(struct pci_dev *pdev)
 }
 
 DECLARE_PCI_FIXUP_FINAL(PLX_VENDOR_ID, PLX_8111_DEVICE_ID, sn2_plx_bridge_fixup);
+DECLARE_PCI_FIXUP_FINAL(PLX_VENDOR_ID, PLX_8112_DEVICE_ID, sn2_plx_bridge_fixup);
