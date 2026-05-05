@@ -204,6 +204,14 @@ config IA64_SGI_UV
 	  UV based systems.  If you have an SGI UV system or are building a
 	  distro kernel, select this option.
 
+config IA64_UNCACHED_ALLOCATOR
+	bool
+	select GENERIC_ALLOCATOR
+	help
+	  Linux kernel allocator for memory that is to be accessed using
+	  uncached references.  Used by SGI Altix (SN2) and similar systems
+	  for special memory regions (fetchops, mspec).
+
 config IA64_HP_SBA_IOMMU
 	bool "HP SBA IOMMU support"
 	default y
