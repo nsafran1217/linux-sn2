@@ -26,6 +26,7 @@
 #include <asm/pal.h>
 #include <linux/atomic.h>
 #include <asm/tlbflush.h>
+#include <asm/uncached.h>
 
 struct uncached_pool {
 	struct gen_pool *pool;
@@ -74,7 +75,7 @@ static void uncached_ipi_mc_drain(void *data)
 static int uncached_add_chunk(struct uncached_pool *uc_pool, int nid)
 {
 	struct page *page;
-	int status, i, nchunks_added = uc_pool->nchunks_added;
+	int status, nchunks_added = uc_pool->nchunks_added;
 	unsigned long c_addr, uc_addr;
 
 	if (mutex_lock_interruptible(&uc_pool->add_chunk_mutex) != 0)
@@ -107,12 +108,14 @@ static int uncached_add_chunk(struct uncached_pool *uc_pool, int nid)
 	uc_addr = c_addr - PAGE_OFFSET + __IA64_UNCACHED_OFFSET;
 
 	/*
-	 * There's a small race here where it's possible for someone to
-	 * access the page through /dev/mem halfway through the conversion
-	 * to uncached - not sure it's really worth bothering about
-	 */
-	for (i = 0; i < (IA64_GRANULE_SIZE / PAGE_SIZE); i++)
-		SetPageUncached(&page[i]);
+	 * The PG_uncached page flag (and the matching SetPageUncached() /
+	 * ClearPageUncached() helpers) was an ia64-only flag formerly used
+	 * by the hibernation code to skip pages that had been converted to
+	 * uncached.  It was removed from page-flags.h when ia64 was dropped
+	 * upstream and not reinstated.  No reader remains in-tree, so
+	 * tracking it here would be write-only state.
+ 	 */
+
 
 	flush_tlb_kernel_range(uc_addr, uc_addr + IA64_GRANULE_SIZE);
 
@@ -163,9 +166,6 @@ static int uncached_add_chunk(struct uncached_pool *uc_pool, int nid)
 
 	/* failed to convert or add the chunk so give it back to the kernel */
 failed:
-	for (i = 0; i < (IA64_GRANULE_SIZE / PAGE_SIZE); i++)
-		ClearPageUncached(&page[i]);
-
 	free_pages(c_addr, IA64_GRANULE_SHIFT-PAGE_SHIFT);
 	mutex_unlock(&uc_pool->add_chunk_mutex);
 	return -1;
