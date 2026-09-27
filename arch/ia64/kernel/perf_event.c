@@ -270,7 +270,13 @@ static int ia64_pmu_add(struct perf_event *event, int flags)
 	if (!avail)
 		return -EAGAIN;
 
-	idx = __ffs(avail);
+	/*
+	 * Events restricted to a subset of the counters are restricted to the
+	 * low ones (PMD5 for L1D events, PMD4..PMD9 for the ER/SI/L2D and
+	 * floating events of the dual-thread parts), so hand out counters from
+	 * the top and keep the low ones free for as long as possible.
+	 */
+	idx = __fls(avail);
 
 	cpuc->used_mask |= 1UL << idx;
 	cpuc->events[idx] = event;
