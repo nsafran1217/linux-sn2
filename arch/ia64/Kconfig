@@ -190,6 +190,7 @@ config IA64_SGI_SN2
 	select NUMA
 	select ACPI_NUMA
 	select IA64_UNCACHED_ALLOCATOR
+	select ARCH_HAS_DMA_OPS
 	help
 	  Selecting this option will add support for SGI Altix (SN2) systems.
 	  This builds a kernel with SN2 platform code including custom I/O,
