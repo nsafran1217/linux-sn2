@@ -68,6 +68,7 @@ static const u64 ia64_mck_cache_events
 static struct ia64_pmu_model ia64_pmu_mck = {
 	.name		= "Itanium 2",
 	.family		= 0x1f,
+	.model		= IA64_PMU_ANY_MODEL,
 	.num_counters	= 4,
 	.counter_bits	= 47,
 	/* es[15:8], umask[19:16], thres[22:20] */

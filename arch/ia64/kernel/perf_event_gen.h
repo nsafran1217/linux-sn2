@@ -14,6 +14,7 @@ static u64 ia64_gen_generic_events[PERF_COUNT_HW_MAX];
 static struct ia64_pmu_model ia64_pmu_gen = {
 	.name		= "Generic",
 	.family		= IA64_PMU_ANY_FAMILY,
+	.model		= IA64_PMU_ANY_MODEL,
 	.num_counters	= 4,
 	.counter_bits	= 32,
 	.event_mask	= 0xffUL << IA64_PMC_ES_SHIFT,

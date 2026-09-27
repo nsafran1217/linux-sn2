@@ -75,6 +75,7 @@ static const u64 ia64_mont_cache_events
 static struct ia64_pmu_model ia64_pmu_mont = {
 	.name		= "Montecito",
 	.family		= 0x20,
+	.model		= IA64_PMU_ANY_MODEL,
 	.num_counters	= 12,
 	.counter_bits	= 47,
 	/* es[15:8], umask[19:16], thres[22:20], all[26], mesi[30:27] */

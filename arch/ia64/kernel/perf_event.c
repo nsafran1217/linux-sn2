@@ -41,6 +41,7 @@
 #define IA64_PMU_MAX_COUNTERS	16	/* PMD4..PMD15 on Montecito */
 
 #define IA64_PMU_ANY_FAMILY	0xff
+#define IA64_PMU_ANY_MODEL	0xff
 
 /*
  * An entry of the canned event tables: the set of counters able to count the
@@ -64,6 +65,7 @@
 struct ia64_pmu_model {
 	const char	*name;
 	unsigned int	family;		/* CPUID[3].family, or ANY	     */
+	unsigned int	model;		/* CPUID[3].model, or ANY	     */
 	unsigned int	num_counters;	/* PMC/PMD pairs starting at 4	     */
 	unsigned int	counter_bits;	/* implemented width of a PMD	     */
 	u64		event_mask;	/* PMC bits the user may choose	     */
@@ -79,7 +81,8 @@ struct ia64_pmu_model {
 #include "perf_event_mont.h"
 
 /*
- * Probed in family order, generic last: it matches anything.
+ * Probed in family order, generic last: it matches anything.  Within a family
+ * the entries for specific models have to come before the catch-all one.
  */
 static struct ia64_pmu_model * const ia64_pmu_models[] = {
 	&ia64_pmu_ita,
@@ -629,6 +632,7 @@ static int __init ia64_pmu_probe_generic(void)
 static int __init ia64_pmu_probe(void)
 {
 	unsigned int family = local_cpu_data->family;
+	unsigned int cpu_model = local_cpu_data->model;
 	struct ia64_pmu_model *model;
 	int i;
 
@@ -637,6 +641,10 @@ static int __init ia64_pmu_probe(void)
 
 		if (model->family != IA64_PMU_ANY_FAMILY &&
 		    model->family != family)
+			continue;
+
+		if (model->model != IA64_PMU_ANY_MODEL &&
+		    model->model != cpu_model)
 			continue;
 
 		if (model == &ia64_pmu_gen && ia64_pmu_probe_generic())
