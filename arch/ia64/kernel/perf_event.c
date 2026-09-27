@@ -79,6 +79,7 @@ struct ia64_pmu_model {
 #include "perf_event_ita.h"
 #include "perf_event_mck.h"
 #include "perf_event_mont.h"
+#include "perf_event_tuk.h"
 
 /*
  * Probed in family order, generic last: it matches anything.  Within a family
@@ -87,6 +88,7 @@ struct ia64_pmu_model {
 static struct ia64_pmu_model * const ia64_pmu_models[] = {
 	&ia64_pmu_ita,
 	&ia64_pmu_mck,
+	&ia64_pmu_tuk,
 	&ia64_pmu_mont,
 	&ia64_pmu_gen,
 };
@@ -483,7 +485,7 @@ static struct attribute *ia64_pmu_format_attrs[] = {
 static umode_t ia64_pmu_format_visible(struct kobject *kobj,
 				       struct attribute *attr, int i)
 {
-	/* .all and .mesi only exist on Montecito */
+	/* .all and .mesi only exist on Montecito and later */
 	if ((attr == &format_attr_all.attr || attr == &format_attr_mesi.attr) &&
 	    !(ia64_pmu_model->event_mask & IA64_PMC_ALL))
 		return 0;

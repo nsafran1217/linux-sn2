@@ -1,7 +1,8 @@
 /* SPDX-License-Identifier: GPL-2.0 */
 /*
  * Dual-core Itanium 2 ("Montecito", "Montvale", CPUID family 0x20) PMU
- * description.
+ * description.  Also the fallback for any later model of family 0x20 that has
+ * no description of its own; the Itanium 9300 (model 2) has one.
  *
  * Twelve 47 bit counters in PMD4..PMD15.  PMC.ism has to be 2 (IA-64 only),
  * bit 26 selects whether a monitor counts for this thread only or for both
