@@ -504,7 +504,14 @@ static const struct dma_map_ops sn_dma_ops = {
 	.get_sgtable		= dma_common_get_sgtable,
 };
 
-void sn_dma_init(void)
+/*
+ * ia64 no longer has an arch-wide dma_ops pointer (v7.2-epic 38c09f598f62,
+ * "ia64/sba_iommu: attach per device instead of globally"), so attach the
+ * SN2 ops to each PCI device from sn_pci_fixup_slot(), once its pcidev_info
+ * and bus provider are known.  Devices left without ops would fall through
+ * to dma_direct and hand raw physical addresses to the PIC/TIO.
+ */
+void sn_dma_set_ops(struct pci_dev *dev)
 {
-	dma_ops = &sn_dma_ops;
+	set_dma_ops(&dev->dev, &sn_dma_ops);
 }
