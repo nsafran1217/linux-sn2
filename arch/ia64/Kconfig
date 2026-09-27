@@ -185,7 +185,6 @@ config IA64_L1_CACHE_SHIFT
 
 config IA64_SGI_SN2
 	bool "SGI-SN2 (Altix) support"
-	depends on !FLATMEM
 	select NUMA
 	select ACPI_NUMA
 	select IA64_UNCACHED_ALLOCATOR
