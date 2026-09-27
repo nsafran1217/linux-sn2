@@ -14,6 +14,7 @@
 #include <linux/interrupt.h>
 #include <linux/clocksource.h>
 
+#include <asm/clocksource.h>
 #include <asm/hw_irq.h>
 #include <asm/timex.h>
 
@@ -34,6 +35,7 @@ static struct clocksource clocksource_sn2 = {
         .read           = read_sn2,
         .mask           = (1LL << 55) - 1,
         .flags          = CLOCK_SOURCE_IS_CONTINUOUS,
+        .vdso_clock_mode = VDSO_CLOCKMODE_MMIO,
 };
 
 /*
@@ -54,7 +56,7 @@ ia64_sn_udelay (unsigned long usecs)
 
 void __init sn_timer_init(void)
 {
-	clocksource_sn2.archdata.fsys_mmio = RTC_COUNTER_ADDR;
+	ia64_fsys_mmio = RTC_COUNTER_ADDR;
 	clocksource_register_hz(&clocksource_sn2, sn_rtc_cycles_per_second);
 
 	ia64_udelay = &ia64_sn_udelay;
