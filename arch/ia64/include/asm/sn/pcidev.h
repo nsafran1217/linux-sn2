@@ -81,5 +81,6 @@ extern void sn_acpi_slot_fixup(struct pci_dev *);
 extern void sn_pci_fixup_slot(struct pci_dev *dev, struct pcidev_info *,
 			      struct sn_irq_info *);
 extern void sn_pci_unfixup_slot(struct pci_dev *dev);
+extern void sn_dma_set_ops(struct pci_dev *dev);
 extern void sn_irq_lh_init(void);
 #endif				/* _ASM_IA64_SN_PCI_PCIDEV_H */

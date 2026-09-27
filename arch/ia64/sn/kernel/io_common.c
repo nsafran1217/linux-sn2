@@ -259,6 +259,8 @@ void sn_pci_fixup_slot(struct pci_dev *dev, struct pcidev_info *pcidev_info,
 		SN_PCIDEV_BUSPROVIDER(dev) = &sn_pci_default_provider;
 	}
 
+	sn_dma_set_ops(dev);
+
 	/* Only set up IRQ stuff if this device has a host bus context */
 	if (bs && sn_irq_info->irq_irq) {
 		pcidev_info->pdi_sn_irq_info = sn_irq_info;
