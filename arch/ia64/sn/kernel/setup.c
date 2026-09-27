@@ -28,7 +28,6 @@
 #include <linux/nodemask.h>
 #include <linux/pm.h>
 #include <linux/efi.h>
-#include <linux/vmalloc.h>
 
 #include <asm/io.h>
 #include <asm/sal.h>
@@ -777,60 +776,3 @@ sn_kernel_launch_event(void)
 		printk(KERN_ERR "KEXEC is not supported in this PROM, Please update the PROM.\n");
 }
 EXPORT_SYMBOL(sn_prom_feature_available);
-
-/*
- * SN2 module notifier: suppress VM_FLUSH_RESET_PERMS on module memory.
- *
- * The execmem subsystem (6.12+) hardcodes VM_FLUSH_RESET_PERMS on all
- * executable memory allocations, and module_set_memory() in strict_rwx.c
- * re-adds it via set_vm_flush_reset_perms().  When module memory is freed,
- * vfree() sees this flag and calls vm_reset_perms() which triggers
- * flush_tlb_kernel_range().  On SN2, this causes SHUB PTC.GA TLB
- * broadcasts that can interfere with concurrent PIO/MMIO traffic.
- *
- * On ia64, set_memory_nx/rw/rox and set_direct_map are all no-ops, so
- * vm_reset_perms() provides no real benefit — the flag is purely harmful.
- *
- * This notifier clears VM_FLUSH_RESET_PERMS from all module memory
- * regions at two points:
- *   MODULE_STATE_LIVE  — before init sections are freed
- *   MODULE_STATE_GOING — before core sections are freed during unload
- */
-#ifdef CONFIG_MODULES
-static void sn2_clear_module_flush_perms(struct module *mod)
-{
-	struct vm_struct *vm;
-
-	for_each_mod_mem_type(type) {
-		if (!mod->mem[type].base)
-			continue;
-		vm = find_vm_area(mod->mem[type].base);
-		if (vm)
-			vm->flags &= ~VM_FLUSH_RESET_PERMS;
-	}
-}
-
-static int sn2_module_notify(struct notifier_block *nb, unsigned long val,
-			     void *data)
-{
-	struct module *mod = data;
-
-	switch (val) {
-	case MODULE_STATE_LIVE:
-	case MODULE_STATE_GOING:
-		sn2_clear_module_flush_perms(mod);
-		break;
-	}
-	return NOTIFY_DONE;
-}
-
-static struct notifier_block sn2_module_nb = {
-	.notifier_call = sn2_module_notify,
-};
-
-static int __init sn2_module_notifier_init(void)
-{
-	return register_module_notifier(&sn2_module_nb);
-}
-late_initcall(sn2_module_notifier_init);
-#endif /* CONFIG_MODULES */
