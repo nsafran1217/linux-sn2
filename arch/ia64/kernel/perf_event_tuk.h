@@ -17,6 +17,10 @@
  * duplicated counters, so they are kept to PMD4..PMD9.  CPU_OP_CYCLES is
  * causal but documented to work on either kind.
  *
+ * The L1D events are split into sets as on Montecito, with SPEC_LOADS_NATTED
+ * rather than LOADS_RETIRED_INTG making up set 6, and the L1D read and data
+ * reference events likewise count in set 0 and set 1 alike.
+ *
  * Event codes are in libpfm encoding: event select in bits 7..0, unit mask in
  * bits 19..16.  Reference: Intel Itanium Processor 9300 Series Reference
  * Manual for Software Development and Optimization, March 2010.
@@ -93,4 +97,6 @@ static struct ia64_pmu_model ia64_pmu_tuk = {
 	.pmc_fixed	= IA64_PMC_ISM_IA64,
 	.generic_events	= ia64_tuk_generic_events,
 	.cache_events	= ia64_tuk_cache_events,
+	.l1d_events	= IA64_L1D_EVENTS_ITA2 | IA64_L1D_ES(0xd9),
+	.l1d_sets01	= IA64_L1D_ES_RANGE(0xc2, 0xc5),
 };

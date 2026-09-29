@@ -62,6 +62,31 @@
 
 #define C(x)			PERF_COUNT_HW_CACHE_##x
 
+/*
+ * The L1D events of Itanium 2 and later are split into sets, and only one
+ * set is routed to the counters at a time: the one picked by bits 4..2 of
+ * the event select programmed into PMC5.  That holds whatever event PMC5
+ * carries and whether or not it is counting.  While L1D events count, PMD5
+ * is therefore either given to an event whose own event select names their
+ * set, or left idle with such an event select parked in PMC5.
+ *
+ * ia64_pmu_model::l1d_events has bit n set if event select 0xc0 + n is one
+ * of the L1D set events, l1d_sets01 marks those that count correctly with
+ * either set 0 or set 1 selected (the L1D read and data reference events).
+ */
+#define IA64_L1D_SELECT		5		/* PMC5 selects the L1D set	     */
+#define IA64_L1D_FIRST_ES	0xc0
+#define IA64_L1D_ES(es)		BIT_ULL((es) - IA64_L1D_FIRST_ES)
+#define IA64_L1D_ES_RANGE(lo, hi)					   \
+	GENMASK_ULL((hi) - IA64_L1D_FIRST_ES, (lo) - IA64_L1D_FIRST_ES)
+#define IA64_L1D_SET(es)	(((es) >> 2) & 7)
+#define IA64_L1D_SET_OF(config)	IA64_L1D_SET((config) >> IA64_PMC_ES_SHIFT)
+
+/* The L1D set events of Itanium 2; later models add to the list. */
+#define IA64_L1D_EVENTS_ITA2						   \
+	(IA64_L1D_ES_RANGE(0xc0, 0xc5) | IA64_L1D_ES(0xc7) |		   \
+	 IA64_L1D_ES(0xca) | IA64_L1D_ES_RANGE(0xcd, 0xd2))
+
 struct ia64_pmu_model {
 	const char	*name;
 	unsigned int	family;		/* CPUID[3].family, or ANY	     */
@@ -73,6 +98,8 @@ struct ia64_pmu_model {
 	const u64	*generic_events;
 	const u64	(*cache_events)[PERF_COUNT_HW_CACHE_OP_MAX]
 				       [PERF_COUNT_HW_CACHE_RESULT_MAX];
+	u64		l1d_events;	/* L1D set events, see above	     */
+	u64		l1d_sets01;	/* ... that count in set 0 and 1     */
 };
 
 #include "perf_event_gen.h"
@@ -101,6 +128,8 @@ struct cpu_hw_events {
 	struct perf_event	*events[IA64_PMU_MAX_COUNTERS];
 	unsigned long		used_mask;
 	unsigned int		n_active;
+	unsigned int		l1d_users;	/* active L1D set events     */
+	unsigned int		l1d_set;	/* ... and the set they use  */
 	bool			enabled;
 };
 
@@ -237,13 +266,66 @@ static void ia64_pmu_start(struct perf_event *event, int flags)
 	ia64_srlz_d();
 }
 
+/*
+ * The L1D sets @config can be counted in, as a bitmap, or 0 for an event that
+ * is not an L1D set event.
+ */
+static unsigned int ia64_pmu_l1d_sets(u64 config)
+{
+	unsigned int es = (config >> IA64_PMC_ES_SHIFT) & 0xff;
+	u64 bit;
+
+	if (es < IA64_L1D_FIRST_ES)
+		return 0;
+
+	bit = IA64_L1D_ES(es);
+	if (!(ia64_pmu_model->l1d_events & bit))
+		return 0;
+	if (ia64_pmu_model->l1d_sets01 & bit)
+		return BIT(0) | BIT(1);
+	return BIT(IA64_L1D_SET(es));
+}
+
+/* A PMC5 value that selects L1D set @set without counting anything. */
+static u64 ia64_pmu_l1d_selector(unsigned int set)
+{
+	return ia64_pmu_model->pmc_fixed |
+	       ((u64)(IA64_L1D_FIRST_ES | set << 2) << IA64_PMC_ES_SHIFT);
+}
+
+/* What an idle PMC (plm == 0, so the monitor is off) is left holding. */
+static u64 ia64_pmu_idle_pmc(struct cpu_hw_events *cpuc, int idx)
+{
+	if (idx == IA64_L1D_SELECT && cpuc->l1d_users)
+		return ia64_pmu_l1d_selector(cpuc->l1d_set);
+	return ia64_pmu_model->pmc_fixed;
+}
+
+/*
+ * The L1D sets every L1D set event in @event's group can be counted in, so
+ * that the first of them to be scheduled picks a set the others can use too.
+ */
+static unsigned int ia64_pmu_group_l1d_sets(struct perf_event *event)
+{
+	struct perf_event *leader = event->group_leader, *sibling;
+	unsigned int sets = ~0U;
+
+	if (leader->pmu == event->pmu && leader->hw.flags)
+		sets &= leader->hw.flags;
+	for_each_sibling_event(sibling, leader)
+		if (sibling->pmu == event->pmu && sibling->hw.flags)
+			sets &= sibling->hw.flags;
+	return sets;
+}
+
 static void ia64_pmu_stop(struct perf_event *event, int flags)
 {
+	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
 	struct hw_perf_event *hwc = &event->hw;
 
 	if (!(hwc->state & PERF_HES_STOPPED)) {
 		/* plm == 0 disables the monitor */
-		ia64_set_pmc(hwc->idx, ia64_pmu_model->pmc_fixed);
+		ia64_set_pmc(hwc->idx, ia64_pmu_idle_pmc(cpuc, hwc->idx));
 		ia64_srlz_d();
 
 		if ((hwc->config_base & IA64_PMC_PLM_USER) &&
@@ -263,20 +345,65 @@ static int ia64_pmu_add(struct perf_event *event, int flags)
 {
 	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
 	struct hw_perf_event *hwc = &event->hw;
-	unsigned long avail;
-	int idx;
+	unsigned long avail, select = BIT(IA64_L1D_SELECT);
+	unsigned int sets = hwc->flags;
+	int idx, set = -1;
 
 	avail = hwc->event_base & ~cpuc->used_mask;
+
+	if (sets) {
+		if (cpuc->l1d_users) {
+			/* the set in use is the only one available */
+			sets &= BIT(cpuc->l1d_set);
+		} else {
+			struct perf_event *on5 = cpuc->events[IA64_L1D_SELECT];
+
+			sets &= ia64_pmu_group_l1d_sets(event);
+			/* an event already on PMD5 has picked the set */
+			if (on5)
+				sets &= BIT(IA64_L1D_SET_OF(on5->hw.config));
+		}
+		if (!sets)
+			return -EAGAIN;
+		set = __fls(sets);
+	} else if (cpuc->l1d_users) {
+		set = cpuc->l1d_set;
+	}
+
+	if (set >= 0) {
+		/*
+		 * PMC5 has to keep selecting the set: PMD5 can only go to an
+		 * event whose event select names it.  An L1D event that fits
+		 * takes PMD5 right away, since nothing else is likely to.
+		 */
+		if (IA64_L1D_SET_OF(hwc->config) != set)
+			avail &= ~select;
+		else if (sets && (avail & select))
+			avail = select;
+	} else if (ia64_pmu_model->l1d_events && (avail & ~select)) {
+		/* leave PMC5 free to select an L1D set later on */
+		avail &= ~select;
+	}
+
 	if (!avail)
 		return -EAGAIN;
 
 	/*
 	 * Events restricted to a subset of the counters are restricted to the
-	 * low ones (PMD5 for L1D events, PMD4..PMD9 for the ER/SI/L2D and
-	 * floating events of the dual-thread parts), so hand out counters from
-	 * the top and keep the low ones free for as long as possible.
+	 * low ones (PMD4..PMD9 for the ER/SI/L2D and floating events of the
+	 * dual-thread parts, PMD4 and PMD5 for Merced's IA64_INST_RETIRED),
+	 * so hand out counters from the top and keep the low ones free for as
+	 * long as possible.
 	 */
 	idx = __fls(avail);
+
+	if (sets && !cpuc->l1d_users++) {
+		cpuc->l1d_set = set;
+		if (idx != IA64_L1D_SELECT && !(cpuc->used_mask & select)) {
+			ia64_set_pmc(IA64_L1D_SELECT, ia64_pmu_l1d_selector(set));
+			ia64_srlz_d();
+		}
+	}
 
 	cpuc->used_mask |= 1UL << idx;
 	cpuc->events[idx] = event;
@@ -301,6 +428,8 @@ static void ia64_pmu_del(struct perf_event *event, int flags)
 	cpuc->events[hwc->idx] = NULL;
 	cpuc->used_mask &= ~(1UL << hwc->idx);
 	cpuc->n_active--;
+	if (hwc->flags)
+		cpuc->l1d_users--;
 	hwc->idx = -1;
 
 	perf_event_update_userpage(event);
@@ -356,6 +485,49 @@ static int ia64_pmu_map_cache_event(u64 config, u64 *event)
 		return -EOPNOTSUPP;
 
 	*event = evt;
+	return 0;
+}
+
+/*
+ * Refuse a group that can never be scheduled as a whole, so that the problem
+ * shows up when the group is built (and perf's weak groups fall back to
+ * separate events) instead of the group silently never counting: more events
+ * than counters, or L1D set events without a set in common.  While L1D set
+ * events count, PMD5 is lost to them unless one of the group's events can
+ * select their set from there.
+ */
+static int ia64_pmu_validate_group(struct perf_event *event)
+{
+	struct perf_event *leader = event->group_leader, *sibling;
+	unsigned int n = 1, sets = event->hw.flags ?: ~0U;
+	unsigned int selects = BIT(IA64_L1D_SET_OF(event->hw.config));
+	bool l1d = event->hw.flags, lost;
+
+	if (event == leader)
+		return 0;
+
+	for_each_sibling_event(sibling, leader) {
+		if (sibling->pmu != event->pmu)
+			continue;
+		n++;
+		selects |= BIT(IA64_L1D_SET_OF(sibling->hw.config));
+		if (sibling->hw.flags) {
+			sets &= sibling->hw.flags;
+			l1d = true;
+		}
+	}
+	if (leader->pmu == event->pmu) {
+		n++;
+		selects |= BIT(IA64_L1D_SET_OF(leader->hw.config));
+		if (leader->hw.flags) {
+			sets &= leader->hw.flags;
+			l1d = true;
+		}
+	}
+
+	lost = l1d && !(selects & sets);
+	if (!sets || n > ia64_pmu_model->num_counters - lost)
+		return -EINVAL;
 	return 0;
 }
 
@@ -418,7 +590,12 @@ static int ia64_pmu_event_init(struct perf_event *event)
 		      ia64_pmu_model->pmc_fixed;
 	hwc->config_base = plm | IA64_PMC_PM | IA64_PMC_OI;
 	hwc->event_base = counters;
+	hwc->flags = ia64_pmu_l1d_sets(hwc->config);
 	hwc->idx = -1;
+
+	ret = ia64_pmu_validate_group(event);
+	if (ret)
+		return ret;
 
 	/*
 	 * Even a counting event needs to overflow now and then, otherwise the

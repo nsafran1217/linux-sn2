@@ -10,6 +10,12 @@
  * events are filtered by -- an L2D/L3 event with an empty MESI mask counts
  * nothing, so the canned events below ask for all four states.
  *
+ * The L1D events come in sets, one of which is counted at a time (see
+ * IA64_L1D_SELECT in perf_event.c): those of Itanium 2 plus
+ * LOADS_RETIRED_INTG in set 6.  The L1D read and data reference events
+ * count in set 0 and set 1 alike, so L1D reads can be counted together with
+ * L1D_READ_MISSES (set 1) as well as with L2DTLB_MISSES (set 0).
+ *
  * Event codes are in libpfm encoding: event select in bits 7..0, unit mask in
  * bits 19..16.
  */
@@ -84,4 +90,6 @@ static struct ia64_pmu_model ia64_pmu_mont = {
 	.pmc_fixed	= IA64_PMC_ISM_IA64,
 	.generic_events	= ia64_mont_generic_events,
 	.cache_events	= ia64_mont_cache_events,
+	.l1d_events	= IA64_L1D_EVENTS_ITA2 | IA64_L1D_ES(0xd8),
+	.l1d_sets01	= IA64_L1D_ES_RANGE(0xc2, 0xc5),
 };

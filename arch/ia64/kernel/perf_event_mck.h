@@ -6,6 +6,10 @@
  * field grew to 8 bits and PMC4 gained a power enable bit (23) which the
  * kernel sets unconditionally.
  *
+ * The L1D events come in sets, one of which is counted at a time (see
+ * IA64_L1D_SELECT in perf_event.c).  With no Itanium 2 at hand to check
+ * which events count in more than one set, each is only counted in its own.
+ *
  * Event codes are in libpfm encoding: event select in bits 7..0, unit mask in
  * bits 19..16.
  */
@@ -77,4 +81,5 @@ static struct ia64_pmu_model ia64_pmu_mck = {
 	.pmc_fixed	= IA64_PMC_ISM_IA64 | (1UL << 23),
 	.generic_events	= ia64_mck_generic_events,
 	.cache_events	= ia64_mck_cache_events,
+	.l1d_events	= IA64_L1D_EVENTS_ITA2,
 };
