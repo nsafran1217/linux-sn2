@@ -308,14 +308,23 @@ pgprot_t ttm_io_prot(struct ttm_buffer_object *bo, struct ttm_resource *res,
 	}
 
 #ifdef CONFIG_IA64_SGI_SN2
-	/* SN2: Force uncacheable for ALL buffer types:
-	 * - Device memory (VRAM, !use_tt): WC causes PIO write buffers
-	 *   to never flush through the SHub→PIC path.
-	 * - System memory (GTT, use_tt): WB creates Modified cache lines
-	 *   that trigger RDEXC directory interventions when the GPU reads
-	 *   via DMA, overflowing the FSB → FSB_PROTO_ERR → MCA.
-	 * UC writes go directly to memory — no cache, no interventions.
-	 * See SGI Altix Porting Guide (007-4520-007) pages 89-90. */
+	/* SN2: never map GPU buffers cacheable.
+	 * - Device memory (VRAM, !use_tt) is PIO space and must be UC.
+	 *   SHub1 routes a coalesced WC line write to PIO space as a
+	 *   memory request: XN IILB CHIPLET_NOMATCH, PIO timeout, hang.
+	 *   Porting Guide (007-4520-007) p.25: global MMR space must be
+	 *   accessed uncached; p.68: mmap of a PCI BAR uses
+	 *   pgprot_noncached().
+	 * - System memory (GTT, use_tt) must not be WB: Modified lines
+	 *   trigger RDEXC interventions when the GPU reads them via DMA,
+	 *   overflowing the FSB → FSB_PROTO_ERR → MCA. WC creates no
+	 *   cached lines either, and the Porting Guide (p.25) lists UC,
+	 *   WB and WC as supported for cacheable memory space. WC lets
+	 *   the CPU write full lines instead of one 8-byte UC store per
+	 *   round trip (~1.4 GB/s vs ~20 MB/s measured on an Altix 350).
+	 */
+	if (man->use_tt)
+		return pgprot_writecombine(tmp);
 	return pgprot_noncached(tmp);
 #endif
 
