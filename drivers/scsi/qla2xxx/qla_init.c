@@ -5443,9 +5443,11 @@ qla2x00_nvram_config(scsi_qla_host_t *vha)
 	 * for link rate and frame size.  Hope that the rest of the settings
 	 * are valid.
 	 */
-	nv->frame_payload_size = 2048;
-	if (IS_QLA23XX(ha))
-		nv->special_options[1] = BIT_7;
+	if (ia64_is_sn2()) {
+		nv->frame_payload_size = 2048;
+		if (IS_QLA23XX(ha))
+			nv->special_options[1] = BIT_7;
+	}
 #endif
 
 	/* Reset Initialization control block */

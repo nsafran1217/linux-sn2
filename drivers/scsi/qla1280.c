@@ -1421,10 +1421,12 @@ qla1280_initialize_adapter(struct scsi_qla_host *ha)
 	ha->flags.abort_isp_active = 0;
 
 #if defined(CONFIG_IA64_SGI_SN2)
-	printk(KERN_INFO "scsi(%li): Enabling SN2 PCI DMA "
-	       "dual channel lockup workaround\n", ha->host_no);
-	ha->flags.use_pci_vchannel = 1;
-	driver_setup.no_nvram = 1;
+	if (ia64_is_sn2()) {
+		printk(KERN_INFO "scsi(%li): Enabling SN2 PCI DMA "
+		       "dual channel lockup workaround\n", ha->host_no);
+		ha->flags.use_pci_vchannel = 1;
+		driver_setup.no_nvram = 1;
+	}
 #endif
 
 	/* TODO: implement support for the 1040 nvram format */
@@ -2250,9 +2252,11 @@ qla1280_nvram_config(struct scsi_qla_host *ha)
 	mb[1] |= nv->firmware_feature.f.report_lvd_bus_transition << 1;
 	mb[1] |= nv->firmware_feature.f.disable_synchronous_backoff << 5;
 #if defined (CONFIG_IA64_SGI_SN2)
-	printk(KERN_INFO "scsi(%li): Enabling SN2 PCI DMA "
-	       "workaround\n", ha->host_no);
-	mb[1] |= nv->firmware_feature.f.unused_9 << 9; /* XXX */	
+	if (ia64_is_sn2()) {
+		printk(KERN_INFO "scsi(%li): Enabling SN2 PCI DMA "
+		       "workaround\n", ha->host_no);
+		mb[1] |= nv->firmware_feature.f.unused_9 << 9; /* XXX */
+	}
 #endif
 	status |= qla1280_mailbox_command(ha, BIT_1 | BIT_0, mb);
 
