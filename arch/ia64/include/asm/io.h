@@ -263,7 +263,7 @@ extern void memset_io(volatile void __iomem *s, int c, long n);
 #define memcpy_toio memcpy_toio
 #define memset_io memset_io
 
-#ifdef CONFIG_IA64_SGI_SN2
+#ifdef CONFIG_IA64_SGI_SN2_ONLY
 /*
  * SN2 overrides port I/O and MMIO to route through SHUB.
  * Undef the generic ia64 definitions and replace with SN2 versions
@@ -313,11 +313,150 @@ extern void memset_io(volatile void __iomem *s, int c, long n);
 #define readl_relaxed(a)	___sn_readl_relaxed(a)
 #define readq_relaxed(a)	___sn_readq_relaxed(a)
 
+#elif defined(CONFIG_IA64_SGI_SN2)
+/*
+ * Kernel for SN2 and generic ia64: the port I/O accessors test the
+ * platform at run time.  On SN2 they call the out-of-line SHub versions
+ * in arch/ia64/sn/kernel/sn2/io.c; otherwise the native inline versions
+ * above run (inb etc. below still name them).  ins*()/outs*() test once
+ * per call, not per element.
+ */
+#include <asm/machvec.h>
+
+extern unsigned int sn2_inb(unsigned long port);
+extern unsigned int sn2_inw(unsigned long port);
+extern unsigned int sn2_inl(unsigned long port);
+extern void sn2_outb(unsigned char val, unsigned long port);
+extern void sn2_outw(unsigned short val, unsigned long port);
+extern void sn2_outl(unsigned int val, unsigned long port);
+extern void sn2_insb(unsigned long port, void *dst, unsigned long count);
+extern void sn2_insw(unsigned long port, void *dst, unsigned long count);
+extern void sn2_insl(unsigned long port, void *dst, unsigned long count);
+extern void sn2_outsb(unsigned long port, const void *src, unsigned long count);
+extern void sn2_outsw(unsigned long port, const void *src, unsigned long count);
+extern void sn2_outsl(unsigned long port, const void *src, unsigned long count);
+
+#define __IA64_SN2_IN(sz, type)						\
+static inline unsigned int __ia64_in##sz(unsigned long port)		\
+{									\
+	if (ia64_is_sn2())						\
+		return sn2_in##sz(port);				\
+	return in##sz(port);						\
+}
+#define __IA64_SN2_OUT(sz, type)					\
+static inline void __ia64_out##sz(type val, unsigned long port)	\
+{									\
+	if (ia64_is_sn2())						\
+		sn2_out##sz(val, port);					\
+	else								\
+		out##sz(val, port);					\
+}
+#define __IA64_SN2_INS(sz)						\
+static inline void __ia64_ins##sz(unsigned long port, void *dst,	\
+				  unsigned long count)			\
+{									\
+	if (ia64_is_sn2())						\
+		sn2_ins##sz(port, dst, count);				\
+	else								\
+		ins##sz(port, dst, count);				\
+}
+#define __IA64_SN2_OUTS(sz)						\
+static inline void __ia64_outs##sz(unsigned long port, const void *src,	\
+				   unsigned long count)			\
+{									\
+	if (ia64_is_sn2())						\
+		sn2_outs##sz(port, src, count);				\
+	else								\
+		outs##sz(port, src, count);				\
+}
+
+__IA64_SN2_IN(b, unsigned char)
+__IA64_SN2_IN(w, unsigned short)
+__IA64_SN2_IN(l, unsigned int)
+__IA64_SN2_OUT(b, unsigned char)
+__IA64_SN2_OUT(w, unsigned short)
+__IA64_SN2_OUT(l, unsigned int)
+__IA64_SN2_INS(b)
+__IA64_SN2_INS(w)
+__IA64_SN2_INS(l)
+__IA64_SN2_OUTS(b)
+__IA64_SN2_OUTS(w)
+__IA64_SN2_OUTS(l)
+
+#undef __IA64_SN2_IN
+#undef __IA64_SN2_OUT
+#undef __IA64_SN2_INS
+#undef __IA64_SN2_OUTS
+
+#undef inb
+#undef inw
+#undef inl
+#undef outb
+#undef outw
+#undef outl
+#undef insb
+#undef insw
+#undef insl
+#undef outsb
+#undef outsw
+#undef outsl
+
+#define inb	__ia64_inb
+#define inw	__ia64_inw
+#define inl	__ia64_inl
+#define outb	__ia64_outb
+#define outw	__ia64_outw
+#define outl	__ia64_outl
+#define insb	__ia64_insb
+#define insw	__ia64_insw
+#define insl	__ia64_insl
+#define outsb	__ia64_outsb
+#define outsw	__ia64_outsw
+#define outsl	__ia64_outsl
+
 #endif /* CONFIG_IA64_SGI_SN2 */
 
 #define xlate_dev_mem_ptr xlate_dev_mem_ptr
 #include <asm-generic/io.h>
 #undef PCI_IOBASE
+
+#if defined(CONFIG_IA64_SGI_SN2) && !defined(CONFIG_IA64_SGI_SN2_ONLY)
+/*
+ * readX() on SN2 adds mf.a and a PIC DMA flush after the load.  Wrap the
+ * asm-generic versions (readb etc. below still name them) with a run
+ * time test.  The _relaxed and writeX() accessors are the same on both
+ * platforms and are not wrapped.
+ */
+extern u8 sn2_readb(const volatile void __iomem *addr);
+extern u16 sn2_readw(const volatile void __iomem *addr);
+extern u32 sn2_readl(const volatile void __iomem *addr);
+extern u64 sn2_readq(const volatile void __iomem *addr);
+
+#define __IA64_SN2_READ(sz, type)					\
+static inline type __ia64_read##sz(const volatile void __iomem *addr)	\
+{									\
+	if (ia64_is_sn2())						\
+		return sn2_read##sz(addr);				\
+	return read##sz(addr);						\
+}
+
+__IA64_SN2_READ(b, u8)
+__IA64_SN2_READ(w, u16)
+__IA64_SN2_READ(l, u32)
+__IA64_SN2_READ(q, u64)
+
+#undef __IA64_SN2_READ
+
+#undef readb
+#undef readw
+#undef readl
+#undef readq
+
+#define readb	__ia64_readb
+#define readw	__ia64_readw
+#define readl	__ia64_readl
+#define readq	__ia64_readq
+#endif
 
 # endif /* __KERNEL__ */
 
