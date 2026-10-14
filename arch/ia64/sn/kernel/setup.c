@@ -54,6 +54,8 @@
 
 
 DEFINE_PER_CPU(struct pda_s, pda_percpu);
+/* inlined into every module via mmiowb() in a combined kernel */
+EXPORT_PER_CPU_SYMBOL(pda_percpu);
 
 #define MAX_PHYS_MEMORY		(1UL << IA64_MAX_PHYS_BITS)	/* Max physical address supported */
 
