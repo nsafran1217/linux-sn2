@@ -48,6 +48,7 @@
 #include <asm/efi.h>
 #include <asm/io.h>
 #include <asm/irq.h>
+#include <asm/machvec.h>
 #include <asm/mca.h>
 #include <asm/page.h>
 #include <asm/perf_event.h>
@@ -685,7 +686,7 @@ int __cpu_disable(void)
 	}
 
 #ifdef CONFIG_IA64_SGI_SN2
-	{
+	if (ia64_is_sn2()) {
 		extern int sn_cpu_disable_allowed(int cpu);
 		if (!sn_cpu_disable_allowed(cpu))
 			return -EBUSY;

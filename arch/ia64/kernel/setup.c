@@ -268,7 +268,7 @@ __initcall(register_memory);
  */
 static int __init check_crashkernel_memory(unsigned long pbase, size_t size)
 {
-	if (IS_ENABLED(CONFIG_IA64_SGI_SN2) || is_uv_system())
+	if (ia64_is_sn2() || is_uv_system())
 		return 1;
 	else
 		return pbase < (1UL << 32);
@@ -505,13 +505,11 @@ early_console_setup (char *cmdline)
 #endif
 #ifdef CONFIG_EFI_PCDP
 	if (!efi_setup_pcdp_console(cmdline))
-		return 0;
 		earlycons++;
 #endif
 	return (earlycons) ? 0 : -1;
 }
 
-#ifndef CONFIG_IA64_SGI_SN2
 static void __init
 primary_display_setup(void)
 {
@@ -544,7 +542,6 @@ primary_display_setup(void)
 	sysfb_primary_display.screen.orig_video_isVGA = 1;	/* XXX fake */
 	sysfb_primary_display.screen.orig_video_ega_bx = 3;	/* XXX fake */
 }
-#endif /* !CONFIG_IA64_SGI_SN2 */
 
 static inline void
 mark_bsp_online (void)
@@ -647,21 +644,21 @@ setup_arch (char **cmdline_p)
 	ROOT_DEV = MKDEV(SCSI_DISK0_MAJOR, 2);
 
 #ifdef CONFIG_IA64_SGI_SN2
-	{
+	if (ia64_is_sn2()) {
 		extern void sn_setup(char **);
 		sn_setup(cmdline_p);
-	}
-#else
-	if (is_uv_system())
-		uv_setup(cmdline_p);
+	} else
+#endif
+	{
+		if (is_uv_system())
+			uv_setup(cmdline_p);
 #ifdef CONFIG_SMP
-	else
-		init_smp_config();
+		else
+			init_smp_config();
 #endif
 
-	primary_display_setup();
-#endif /* CONFIG_IA64_SGI_SN2 */
-
+		primary_display_setup();
+	}
 
 	clear_sched_clock_stable();
 }
@@ -1090,7 +1087,7 @@ cpu_init (void)
 		max_num_phys_stacked = num_phys_stacked;
 	}
 #ifdef CONFIG_IA64_SGI_SN2
-	{
+	if (ia64_is_sn2()) {
 		extern void sn_cpu_init(void);
 		sn_cpu_init();
 	}
