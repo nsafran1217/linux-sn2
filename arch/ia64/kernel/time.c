@@ -29,6 +29,7 @@
 #include <asm/delay.h>
 #include <asm/efi.h>
 #include <asm/hw_irq.h>
+#include <asm/machvec.h>
 #include <asm/ptrace.h>
 #include <asm/sal.h>
 #include <asm/sections.h>
@@ -181,7 +182,7 @@ timer_interrupt (int irq, void *dev_id)
 	}
 
 #ifdef CONFIG_IA64_SGI_SN2
-	{
+	if (ia64_is_sn2()) {
 		extern void sn_timer_interrupt(int irq, void *dev_id);
 		sn_timer_interrupt(irq, dev_id);
 	}

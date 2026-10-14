@@ -38,6 +38,7 @@
 #include <asm/intrinsics.h>
 #include <asm/io.h>
 #include <asm/hw_irq.h>
+#include <asm/machvec.h>
 #include <asm/tlbflush.h>
 
 #include "irq.h"
@@ -626,7 +627,7 @@ init_IRQ (void)
 	}
 #endif
 #ifdef CONFIG_IA64_SGI_SN2
-	{
+	if (ia64_is_sn2()) {
 		extern void sn_irq_init(void);
 		sn_irq_init();
 	}

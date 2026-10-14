@@ -27,6 +27,7 @@
 #include <linux/dmi.h>
 #endif
 #ifdef CONFIG_IA64_SGI_SN2
+#include <asm/machvec.h>
 #include <asm/sn/acpi.h>
 #endif
 #include <linux/acpi_viot.h>
@@ -1493,7 +1494,8 @@ static int __init acpi_init(void)
 		return result;
 	}
 #ifdef CONFIG_IA64_SGI_SN2
-	sn_io_acpi_init();
+	if (ia64_is_sn2())
+		sn_io_acpi_init();
 #endif
 	acpi_init_ffh();
 

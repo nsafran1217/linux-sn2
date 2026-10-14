@@ -29,6 +29,7 @@
 
 #include <asm/page.h>
 #include <asm/io.h>
+#include <asm/machvec.h>
 #include <asm/sal.h>
 #include <asm/smp.h>
 #include <asm/irq.h>
@@ -139,7 +140,8 @@ static unsigned int new_space(u64 phys_base, int sparse)
 	 * that bus's I/O BARs in the dropped range, so give it a space of its
 	 * own, as every other bus gets.
 	 */
-	first = 1;
+	if (ia64_is_sn2())
+		first = 1;
 #endif
 
 	mmio_base = (u64) ioremap(phys_base, 0);
@@ -368,7 +370,7 @@ static void pcibios_fixup_bridge_resources(struct pci_dev *dev)
 	 * claim also writes the window back disabled, which cuts off the
 	 * devices behind the bridge.  Leave it as the PROM set it.
 	 */
-	if (!SN_ACPI_BASE_SUPPORT())
+	if (ia64_is_sn2() && !SN_ACPI_BASE_SUPPORT())
 		return;
 #endif
 
@@ -396,7 +398,7 @@ void pcibios_fixup_bus(struct pci_bus *b)
 	list_for_each_entry(dev, &b->devices, bus_list)
 		pcibios_fixup_device_resources(dev);
 #ifdef CONFIG_IA64_SGI_SN2
-	{
+	if (ia64_is_sn2()) {
 		extern void sn_pci_fixup_bus(struct pci_bus *);
 		sn_pci_fixup_bus(b);
 	}
