@@ -5,95 +5,66 @@
  *
  * Copyright (C) 2003 Silicon Graphics, Inc. All rights reserved.
  *
- * The generic kernel requires function pointers to these routines, so
- * we wrap the inlines from asm/ia64/sn/sn2/io.h here.
+ * A kernel that runs on both SN2 and generic ia64 calls these from the
+ * accessors in asm/io.h when ia64_is_sn2() is true, so the SN2 bodies
+ * aren't inlined at every call site.  We wrap the inlines from
+ * asm/sn/io.h here.  An IA64_SGI_SN2_ONLY kernel inlines them directly
+ * and doesn't need these.
  */
 
+#include <linux/export.h>
+#include <linux/unaligned.h>
+#include <asm/io.h>
 #include <asm/sn/io.h>
 
+#ifndef CONFIG_IA64_SGI_SN2_ONLY
 
-#undef __sn_inb
-#undef __sn_inw
-#undef __sn_inl
-#undef __sn_outb
-#undef __sn_outw
-#undef __sn_outl
-#undef __sn_readb
-#undef __sn_readw
-#undef __sn_readl
-#undef __sn_readq
-#undef __sn_readb_relaxed
-#undef __sn_readw_relaxed
-#undef __sn_readl_relaxed
-#undef __sn_readq_relaxed
+#define SN2_PORT_IO(sz, type)						\
+unsigned int sn2_in##sz(unsigned long port)				\
+{									\
+	return ___sn_in##sz(port);					\
+}									\
+EXPORT_SYMBOL(sn2_in##sz);						\
+									\
+void sn2_out##sz(type val, unsigned long port)				\
+{									\
+	___sn_out##sz(val, port);					\
+}									\
+EXPORT_SYMBOL(sn2_out##sz);						\
+									\
+void sn2_ins##sz(unsigned long port, void *dst, unsigned long count)	\
+{									\
+	type *d = dst;							\
+									\
+	while (count--)							\
+		put_unaligned(___sn_in##sz(port), d++);			\
+}									\
+EXPORT_SYMBOL(sn2_ins##sz);						\
+									\
+void sn2_outs##sz(unsigned long port, const void *src,			\
+		  unsigned long count)					\
+{									\
+	const type *s = src;						\
+									\
+	while (count--)							\
+		___sn_out##sz(get_unaligned(s++), port);		\
+}									\
+EXPORT_SYMBOL(sn2_outs##sz);
 
-unsigned int __sn_inb(unsigned long port)
-{
-	return ___sn_inb(port);
-}
+SN2_PORT_IO(b, unsigned char)
+SN2_PORT_IO(w, unsigned short)
+SN2_PORT_IO(l, unsigned int)
 
-unsigned int __sn_inw(unsigned long port)
-{
-	return ___sn_inw(port);
-}
+#define SN2_READ(sz, type)						\
+type sn2_read##sz(const volatile void __iomem *addr)			\
+{									\
+	return ___sn_read##sz(addr);					\
+}									\
+EXPORT_SYMBOL(sn2_read##sz);
 
-unsigned int __sn_inl(unsigned long port)
-{
-	return ___sn_inl(port);
-}
+SN2_READ(b, u8)
+SN2_READ(w, u16)
+SN2_READ(l, u32)
+SN2_READ(q, u64)
 
-void __sn_outb(unsigned char val, unsigned long port)
-{
-	___sn_outb(val, port);
-}
-
-void __sn_outw(unsigned short val, unsigned long port)
-{
-	___sn_outw(val, port);
-}
-
-void __sn_outl(unsigned int val, unsigned long port)
-{
-	___sn_outl(val, port);
-}
-
-unsigned char __sn_readb(void __iomem *addr)
-{
-	return ___sn_readb(addr);
-}
-
-unsigned short __sn_readw(void __iomem *addr)
-{
-	return ___sn_readw(addr);
-}
-
-unsigned int __sn_readl(void __iomem *addr)
-{
-	return ___sn_readl(addr);
-}
-
-unsigned long __sn_readq(void __iomem *addr)
-{
-	return ___sn_readq(addr);
-}
-
-unsigned char __sn_readb_relaxed(void __iomem *addr)
-{
-	return ___sn_readb_relaxed(addr);
-}
-
-unsigned short __sn_readw_relaxed(void __iomem *addr)
-{
-	return ___sn_readw_relaxed(addr);
-}
-
-unsigned int __sn_readl_relaxed(void __iomem *addr)
-{
-	return ___sn_readl_relaxed(addr);
-}
-
-unsigned long __sn_readq_relaxed(void __iomem *addr)
-{
-	return ___sn_readq_relaxed(addr);
-}
-
+#endif /* !CONFIG_IA64_SGI_SN2_ONLY */
