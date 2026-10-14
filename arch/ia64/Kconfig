@@ -192,8 +192,23 @@ config IA64_SGI_SN2
 	help
 	  Selecting this option will add support for SGI Altix (SN2) systems.
 	  This builds a kernel with SN2 platform code including custom I/O,
-	  DMA, IRQ, and NUMA support for the SHUB interconnect.  If you have
-	  an SGI Altix system, say Y.  Otherwise, say N.
+	  DMA, IRQ, and NUMA support for the SHUB interconnect.
+
+	  The platform is detected at boot from the ACPI OEM ID, so the
+	  kernel still boots on other ia64 systems unless
+	  IA64_SGI_SN2_ONLY is set.  If you have an SGI Altix system, or
+	  are building a distribution kernel, say Y.  Otherwise, say N.
+
+config IA64_SGI_SN2_ONLY
+	bool "Build for SGI Altix (SN2) only"
+	depends on IA64_SGI_SN2
+	help
+	  Hard-wire the SN2 platform instead of detecting it at boot.  This
+	  removes the runtime platform test from port and MMIO accessors,
+	  interrupt vector lookups, IPIs and TLB purges, but the kernel
+	  will not boot on any other ia64 system.
+
+	  If unsure, say N.
 
 config SGI_SN
 	def_bool y

@@ -54,6 +54,7 @@
 #include <linux/crash_dump.h>
 
 #include <asm/efi.h>
+#include <asm/machvec.h>
 #include <asm/mca.h>
 #include <asm/meminit.h>
 #include <asm/mmu.h>
@@ -576,6 +577,8 @@ setup_arch (char **cmdline_p)
 	io_port_init();
 
 	uv_probe_system_type();
+	/* before anything that tests ia64_is_sn2(), incl. the console */
+	ia64_platform_detect();
 	parse_early_param();
 
 	if (early_console_setup(*cmdline_p) == 0)
