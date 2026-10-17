@@ -554,7 +554,7 @@ static struct proc_dir_entry *proc_sn2_ptc;
 
 static int __init sn2_ptc_init(void)
 {
-	if (!ia64_platform_is("sn2"))
+	if (!ia64_is_sn2())
 		return 0;
 
 	proc_sn2_ptc = proc_create(PTC_BASENAME, 0444,

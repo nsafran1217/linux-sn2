@@ -114,7 +114,7 @@ check_versions (struct ia64_sal_systab *systab)
 		sal_version = SAL_VERSION_CODE(0, 0);
 	}
 
-	if (ia64_platform_is("sn2") && (sal_revision == SAL_VERSION_CODE(2, 9)))
+	if (ia64_is_sn2() && (sal_revision == SAL_VERSION_CODE(2, 9)))
 		/*
 		 * SGI Altix has hard-coded version 2.9 in their prom
 		 * but they actually implement 3.2, so let's fix it here.

@@ -461,7 +461,7 @@ sn_io_early_init(void)
 {
 	int i;
 
-	if (!ia64_platform_is("sn2") || IS_RUNNING_ON_FAKE_PROM())
+	if (!ia64_is_sn2() || IS_RUNNING_ON_FAKE_PROM())
 		return 0;
 
 	/* we set the acpi revision to that of the DSDT table OEM rev. */
@@ -521,7 +521,7 @@ sn_io_late_init(void)
 	nasid_t nasid;
 	cnodeid_t near_cnode;
 
-	if (!ia64_platform_is("sn2") || IS_RUNNING_ON_FAKE_PROM())
+	if (!ia64_is_sn2() || IS_RUNNING_ON_FAKE_PROM())
 		return 0;
 
 	/*
