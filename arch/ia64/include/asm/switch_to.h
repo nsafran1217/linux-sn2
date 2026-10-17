@@ -53,6 +53,13 @@ extern void ia64_load_extra (struct task_struct *task);
 } while (0)
 
 #ifdef CONFIG_SMP
+#ifdef CONFIG_IA64_SGI_SN2
+extern void sn_migrate(struct task_struct *task);
+#define ia64_platform_migrate(task)	sn_migrate(task)
+#else
+#define ia64_platform_migrate(task)	do { } while (0)
+#endif
+
 /*
  * In the SMP case, we save the fph state when context-switching away from a thread that
  * modified fph.  This way, when the thread gets scheduled on another CPU, the CPU can
@@ -70,6 +77,7 @@ extern void ia64_load_extra (struct task_struct *task);
 	if (unlikely((current->thread.flags & IA64_THREAD_MIGRATION) &&	       \
 		     (task_cpu(current) !=				       \
 		      		      task_thread_info(current)->last_cpu))) { \
+		ia64_platform_migrate(current);				       \
 		task_thread_info(current)->last_cpu = task_cpu(current);       \
 	}								       \
 } while (0)
