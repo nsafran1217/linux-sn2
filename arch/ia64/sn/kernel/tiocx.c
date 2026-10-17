@@ -492,7 +492,7 @@ static int __init tiocx_init(void)
 	int found_tiocx_device = 0;
 	int err;
 
-	if (!ia64_platform_is("sn2"))
+	if (!ia64_is_sn2())
 		return 0;
 
 	err = bus_register(&tiocx_bus_type);

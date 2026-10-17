@@ -334,7 +334,7 @@ get_processor_proximity_domain(struct acpi_srat_cpu_affinity *pa)
 	int pxm;
 
 	pxm = pa->proximity_domain_lo;
-	if (ia64_platform_is("sn2") || acpi_srat_revision >= 2)
+	if (ia64_is_sn2() || acpi_srat_revision >= 2)
 		pxm += pa->proximity_domain_hi[0] << 8;
 	return pxm;
 }
@@ -345,7 +345,7 @@ get_memory_proximity_domain(struct acpi_srat_mem_affinity *ma)
 	int pxm;
 
 	pxm = ma->proximity_domain;
-	if (!ia64_platform_is("sn2") && acpi_srat_revision <= 1)
+	if (!ia64_is_sn2() && acpi_srat_revision <= 1)
 		pxm &= 0xff;
 
 	return pxm;
@@ -640,7 +640,7 @@ int __init acpi_boot_init(void)
 
 	if (acpi_table_parse_madt
 	    (ACPI_MADT_TYPE_IO_SAPIC, acpi_parse_iosapic, NR_IOSAPICS) < 1) {
-		if (!ia64_platform_is("sn2"))
+		if (!ia64_is_sn2())
 			printk(KERN_ERR PREFIX
 			       "Error parsing MADT - no IOSAPIC entries\n");
 	}

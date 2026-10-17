@@ -381,7 +381,7 @@ scdrv_init(void)
 	dev_t first_dev, dev;
 	nasid_t event_nasid;
 
-	if (!ia64_platform_is("sn2"))
+	if (!ia64_is_sn2())
 		return -ENODEV;
 
 	event_nasid = ia64_sn_get_console_nasid();

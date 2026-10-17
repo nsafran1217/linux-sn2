@@ -761,7 +761,7 @@ static int __init sn_sal_init(void)
 {
 	int retval;
 
-	if (!ia64_platform_is("sn2"))
+	if (!ia64_is_sn2())
 		return 0;
 
 	printk(KERN_INFO "sn_console: Console driver init\n");
@@ -1007,7 +1007,7 @@ static struct console sal_console_early __initdata = {
  */
 int __init sn_serial_console_early_setup(void)
 {
-	if (!ia64_platform_is("sn2"))
+	if (!ia64_is_sn2())
 		return -1;
 
 	sal_console_port.sc_ops = &poll_ops;
@@ -1032,7 +1032,7 @@ int __init sn_serial_console_early_setup(void)
  */
 static int __init sn_sal_serial_console_init(void)
 {
-	if (ia64_platform_is("sn2")) {
+	if (ia64_is_sn2()) {
 		sn_sal_switch_to_asynch(&sal_console_port);
 		DPRINTF("sn_sal_serial_console_init : register console\n");
 		register_console(&sal_console);

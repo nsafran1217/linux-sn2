@@ -177,7 +177,7 @@ int __init prominfo_init(void)
 	struct proc_dir_entry *sgi_prominfo_entry;
 	cnodeid_t cnodeid;
 
-	if (!ia64_platform_is("sn2"))
+	if (!ia64_is_sn2())
 		return 0;
 
 	sgi_prominfo_entry = proc_mkdir("sgi_prominfo", NULL);

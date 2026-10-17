@@ -380,7 +380,7 @@
 
 #define NVRAM_DELAY()			udelay(500)	/* 2 microseconds */
 
-#if defined(__ia64__) && !defined(ia64_platform_is)
+#if defined(CONFIG_IA64_SGI_SN2)
 #include <asm/machvec.h>
 #endif
 

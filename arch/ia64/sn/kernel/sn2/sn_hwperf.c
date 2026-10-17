@@ -983,7 +983,7 @@ static int sn_hwperf_misc_register_init(void)
 {
 	int e;
 
-	if (!ia64_platform_is("sn2"))
+	if (!ia64_is_sn2())
 		return 0;
 
 	sn_hwperf_init();

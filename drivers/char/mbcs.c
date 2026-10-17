@@ -810,7 +810,7 @@ static int __init mbcs_init(void)
 {
 	int rv;
 
-	if (!ia64_platform_is("sn2"))
+	if (!ia64_is_sn2())
 		return -ENODEV;
 
 	// Put driver into chrdevs[].  Get major number.
