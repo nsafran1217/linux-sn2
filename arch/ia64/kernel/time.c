@@ -180,6 +180,13 @@ timer_interrupt (int irq, void *dev_id)
 		return IRQ_HANDLED;
 	}
 
+#ifdef CONFIG_IA64_SGI_SN2
+	{
+		extern void sn_timer_interrupt(int irq, void *dev_id);
+		sn_timer_interrupt(irq, dev_id);
+	}
+#endif
+
 	new_itm = local_cpu_data->itm_next;
 
 	if (!time_after(ia64_get_itc(), new_itm))
