@@ -166,9 +166,13 @@ static int sgi_tioca_insert_memory(struct agp_memory *mem, off_t pg_start,
 	if (num_entries < 0)
 		num_entries = 0;
 
-	if (type != 0 || mem->type != 0) {
+	/*
+	 * TTM binds AGP_USER_MEMORY and AGP_USER_CACHED_MEMORY.  The CA has one
+	 * GART entry format, so these all map the same way as type 0.
+	 */
+	if (bridge->driver->agp_type_to_mask_type(bridge, type) != 0 ||
+	    bridge->driver->agp_type_to_mask_type(bridge, mem->type) != 0)
 		return -EINVAL;
-	}
 
 	if ((pg_start + mem->page_count) > num_entries)
 		return -EINVAL;
@@ -208,9 +212,9 @@ static int sgi_tioca_remove_memory(struct agp_memory *mem, off_t pg_start,
 	if (!bridge)
 		return -EINVAL;
 
-	if (type != 0 || mem->type != 0) {
+	if (bridge->driver->agp_type_to_mask_type(bridge, type) != 0 ||
+	    bridge->driver->agp_type_to_mask_type(bridge, mem->type) != 0)
 		return -EINVAL;
-	}
 
 	table = (u64 *)bridge->gatt_table;
 
