@@ -76,9 +76,39 @@ sgi_tioca_mask_memory(struct agp_bridge_data *bridge, dma_addr_t addr,
 	return tioca_physpage_to_gart(addr);
 }
 
+/*
+ * The CA has no AGP capability of its own, so only the card needs setting up.
+ * Leave the card alone if firmware has already enabled AGP: the rate must not
+ * change while AGP_ENABLE is set.
+ */
 static void sgi_tioca_agp_enable(struct agp_bridge_data *bridge, u32 mode)
 {
-	tioca_fastwrite_enable(bridge->dev_private_data);
+	struct pci_dev *pdev = bridge->dev;
+	int cap = pci_find_capability(pdev, PCI_CAP_ID_AGP);
+	u32 status, cmd;
+
+	if (!cap)
+		return;
+
+	pci_read_config_dword(pdev, cap + PCI_AGP_STATUS, &status);
+	pci_read_config_dword(pdev, cap + PCI_AGP_COMMAND, &cmd);
+	dev_info(&pdev->dev, "TIOCA AGP: status 0x%08x command 0x%08x requested 0x%08x\n",
+		 status, cmd, mode);
+
+	if (!(cmd & AGPSTAT_AGP_ENABLE)) {
+		u32 rq = min(status & AGPSTAT_RQ_DEPTH, bridge->mode & AGPSTAT_RQ_DEPTH);
+
+		cmd = rq | (3 << AGPSTAT_ARQSZ_SHIFT) | AGPSTAT_SBA;
+		cmd |= (mode & AGPSTAT3_4X) ? AGPSTAT3_4X : AGPSTAT3_8X;
+		pci_write_config_dword(pdev, cap + PCI_AGP_COMMAND, cmd);
+		cmd |= AGPSTAT_AGP_ENABLE;
+		pci_write_config_dword(pdev, cap + PCI_AGP_COMMAND, cmd);
+		pci_read_config_dword(pdev, cap + PCI_AGP_COMMAND, &cmd);
+		dev_info(&pdev->dev, "TIOCA AGP: command now 0x%08x\n", cmd);
+	}
+
+	if (mode & AGPSTAT_FW)
+		tioca_fastwrite_enable(bridge->dev_private_data);
 }
 
 /*
