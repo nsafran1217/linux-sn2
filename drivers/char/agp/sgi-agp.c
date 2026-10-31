@@ -240,9 +240,9 @@ static struct agp_bridge_data *sgi_tioca_find_bridge(struct pci_dev *pdev)
 
 	list_for_each_entry(bridge, &agp_bridges, list) {
 		if (bridge->dev->bus == pdev->bus)
-			break;
+			return bridge;
 	}
-	return bridge;
+	return NULL;
 }
 
 const struct agp_bridge_driver sgi_tioca_driver = {
@@ -273,7 +273,7 @@ static int agp_sgi_init(void)
 {
 	unsigned int j;
 	struct tioca_kernel *info;
-	struct pci_dev *pdev = NULL;
+	struct pci_dev *pdev;
 
 	if (tioca_gart_found)
 		printk(KERN_INFO PFX "SGI TIO CA GART driver initialized.\n");
@@ -288,17 +288,24 @@ static int agp_sgi_init(void)
 
 	j = 0;
 	list_for_each_entry(info, &tioca_list, ca_list) {
-		if (list_empty(info->ca_devices))
-			continue;
-		list_for_each_entry(pdev, info->ca_devices, bus_list) {
-			u8 cap_ptr;
+		struct pci_dev *agp_dev = NULL;
 
+		/*
+		 * Must not use the iterator after the loop: when it runs to
+		 * the end, pdev is the list head and not a pci_dev.
+		 */
+		list_for_each_entry(pdev, info->ca_devices, bus_list) {
 			if (pdev->class != (PCI_CLASS_DISPLAY_VGA << 8))
 				continue;
-			cap_ptr = pci_find_capability(pdev, PCI_CAP_ID_AGP);
-			if (!cap_ptr)
-				continue;
+			if (pci_find_capability(pdev, PCI_CAP_ID_AGP)) {
+				agp_dev = pdev;
+				break;
+			}
 		}
+		if (!agp_dev)
+			continue;
+		pdev = agp_dev;
+
 		sgi_tioca_agp_bridges[j] = agp_alloc_bridge();
 		printk(KERN_INFO PFX "bridge %d = 0x%p\n", j,
 		       sgi_tioca_agp_bridges[j]);
