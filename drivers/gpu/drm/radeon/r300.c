@@ -491,6 +491,14 @@ void r300_mc_init(struct radeon_device *rdev)
 	base = rdev->mc.aper_base;
 	if (rdev->flags & RADEON_IS_IGP)
 		base = (RREG32(RADEON_NB_TOM) & 0xffff) << 16;
+#ifdef CONFIG_IA64_SGI_SN2
+	/*
+	 * SN2: aper_base is a 64-bit CPU PIO address, not a bus address.  Put
+	 * VRAM at MC 0, clear of the CA GART apertures at
+	 * 0x80000000-0xffffffff.
+	 */
+	base = 0;
+#endif
 	radeon_vram_location(rdev, &rdev->mc, base);
 	rdev->mc.gtt_base_align = 0;
 	if (!(rdev->flags & RADEON_IS_AGP))
