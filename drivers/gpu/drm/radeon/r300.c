@@ -31,6 +31,10 @@
 #include <linux/seq_file.h>
 #include <linux/slab.h>
 
+#ifdef CONFIG_IA64_SGI_SN2
+#include <asm/machvec.h>
+#endif
+
 #include <drm/drm.h>
 #include <drm/drm_device.h>
 #include <drm/drm_file.h>
@@ -491,6 +495,15 @@ void r300_mc_init(struct radeon_device *rdev)
 	base = rdev->mc.aper_base;
 	if (rdev->flags & RADEON_IS_IGP)
 		base = (RREG32(RADEON_NB_TOM) & 0xffff) << 16;
+#ifdef CONFIG_IA64_SGI_SN2
+	/*
+	 * SN2: aper_base is a 64-bit CPU PIO address, not a bus address.  Put
+	 * VRAM at MC 0, clear of the CA GART apertures at
+	 * 0x80000000-0xffffffff.
+	 */
+	if (ia64_is_sn2())
+		base = 0;
+#endif
 	radeon_vram_location(rdev, &rdev->mc, base);
 	rdev->mc.gtt_base_align = 0;
 	if (!(rdev->flags & RADEON_IS_AGP))
