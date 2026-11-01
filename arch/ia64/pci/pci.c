@@ -13,6 +13,9 @@
  */
 
 #include <linux/acpi.h>
+#ifdef CONFIG_IA64_SGI_SN2
+#include <asm/sn/acpi.h>
+#endif
 #include <linux/types.h>
 #include <linux/kernel.h>
 #include <linux/pci.h>
@@ -346,6 +349,18 @@ static void pcibios_fixup_bridge_resources(struct pci_dev *dev)
 
 	if (!dev->bus)
 		return;
+
+#ifdef CONFIG_IA64_SGI_SN2
+	/*
+	 * Without ACPI IO support the root bus only has the legacy windows,
+	 * so a window the PROM programmed into a bridge can't be claimed: it
+	 * holds a raw bus address with no parent to put it under.  A failed
+	 * claim also writes the window back disabled, which cuts off the
+	 * devices behind the bridge.  Leave it as the PROM set it.
+	 */
+	if (!SN_ACPI_BASE_SUPPORT())
+		return;
+#endif
 
 	for (idx = PCI_BRIDGE_RESOURCES; idx < PCI_NUM_RESOURCES; idx++) {
 		struct resource *r = &dev->resource[idx];
