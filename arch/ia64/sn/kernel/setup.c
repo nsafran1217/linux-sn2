@@ -190,6 +190,24 @@ void __init early_sn_setup(void)
 	printk(KERN_ERR "failed to find SAL entry point\n");
 }
 
+/**
+ * sn_set_io_os_features - tell the PROM about ACPI and PCI segment support
+ *
+ * An ACPI capable PROM rebuilds the DSDT and adds the SSDTs in response, so
+ * this has to come before the first acpi_table_init().  Parsing the tables
+ * again afterwards doesn't work: ACPICA keeps its table count across the second
+ * pass, the new entries land after the zeroed old ones, and
+ * acpi_reallocate_root_table() then compacts them out from under
+ * acpi_gbl_dsdt_index.
+ */
+void __init sn_set_io_os_features(void)
+{
+	early_sn_setup();	/* the early console may not have found SAL */
+
+	ia64_sn_set_os_feature(OSF_PCISEGMENT_ENABLE);
+	ia64_sn_set_os_feature(OSF_ACPI_ENABLE);
+}
+
 extern int platform_intr_list[];
 static int shub_1_1_found;
 
@@ -376,17 +394,6 @@ void __init sn_setup(char **cmdline_p)
 	ia64_sn_plat_set_error_handling_features();	// obsolete
 	ia64_sn_set_os_feature(OSF_MCA_SLV_TO_OS_INIT_SLV);
 	ia64_sn_set_os_feature(OSF_FEAT_LOG_SBES);
-	/*
-	 * Note: The calls to notify the PROM of ACPI and PCI Segment
-	 *	 support must be done prior to acpi_load_tables(), as
-	 *	 an ACPI capable PROM will rebuild the DSDT as result
-	 *	 of the call.
-	 */
-	ia64_sn_set_os_feature(OSF_PCISEGMENT_ENABLE);
-	ia64_sn_set_os_feature(OSF_ACPI_ENABLE);
-
-	/* Load the new DSDT and SSDT tables into the global table list. */
-	acpi_table_init();
 
 #if defined(CONFIG_VT) && defined(CONFIG_VGA_CONSOLE)
 	/*

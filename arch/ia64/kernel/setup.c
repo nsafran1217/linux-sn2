@@ -581,6 +581,13 @@ setup_arch (char **cmdline_p)
 	if (early_console_setup(*cmdline_p) == 0)
 		mark_bsp_online();
 
+#ifdef CONFIG_IA64_SGI_SN2
+	{
+		extern void sn_set_io_os_features(void);
+		sn_set_io_os_features();
+	}
+#endif
+
 	/* Initialize the ACPI boot-time table parser */
 	acpi_table_init();
 	early_acpi_boot_init();
