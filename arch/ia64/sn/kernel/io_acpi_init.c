@@ -6,6 +6,7 @@
  * Copyright (C) 2006 Silicon Graphics, Inc. All rights reserved.
  */
 
+#include <asm/sn/acpi.h>
 #include <asm/sn/types.h>
 #include <asm/sn/addrs.h>
 #include <asm/sn/pcidev.h>
@@ -491,6 +492,10 @@ sn_acpi_bus_fixup(struct pci_bus *bus)
  * sn_io_acpi_init - PROM has ACPI support for IO, defining at a minimum the
  *		     nodes and root buses in the DSDT. As a result, bus scanning
  *		     will be initiated by the Linux ACPI code.
+ *
+ *		     Called from acpi_init(), after acpi_bus_init() has loaded
+ *		     the namespace and before acpi_scan_init() binds the root
+ *		     buses.
  */
 
 void __init
@@ -499,8 +504,8 @@ sn_io_acpi_init(void)
 	u64 result;
 	long status;
 
-	/* SN Altix does not follow the IOSAPIC IRQ routing model */
-	acpi_irq_model = ACPI_IRQ_MODEL_PLATFORM;
+	if (!SN_ACPI_BASE_SUPPORT())
+		return;
 
 	/* Setup hubdev_info for all SGIHUB/SGITIO devices */
 	acpi_get_devices("SGIHUB", sn_acpi_hubdev_init, NULL, NULL);

@@ -26,6 +26,9 @@
 #include <asm/mpspec.h>
 #include <linux/dmi.h>
 #endif
+#ifdef CONFIG_IA64_SGI_SN2
+#include <asm/sn/acpi.h>
+#endif
 #include <linux/acpi_viot.h>
 #include <linux/pci.h>
 #include <acpi/apei.h>
@@ -1489,6 +1492,9 @@ static int __init acpi_init(void)
 		disable_acpi();
 		return result;
 	}
+#ifdef CONFIG_IA64_SGI_SN2
+	sn_io_acpi_init();
+#endif
 	acpi_init_ffh();
 
 	pci_mmcfg_late_init();

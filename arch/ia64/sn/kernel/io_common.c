@@ -32,7 +32,6 @@
 
 extern void sn_init_cpei_timer(void);
 extern void register_sn_procfs(void);
-extern void sn_io_acpi_init(void);
 extern void sn_io_init(void);
 
 
@@ -500,7 +499,8 @@ sn_io_early_init(void)
 			header->oem_revision);
 	}
 	if (SN_ACPI_BASE_SUPPORT())
-		sn_io_acpi_init();
+		/* SN Altix does not follow the IOSAPIC IRQ routing model */
+		acpi_irq_model = ACPI_IRQ_MODEL_PLATFORM;
 	else
 		sn_io_init();
 	return 0;

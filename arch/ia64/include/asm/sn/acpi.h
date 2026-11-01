@@ -12,4 +12,6 @@
 extern int sn_acpi_rev;
 #define SN_ACPI_BASE_SUPPORT()   (sn_acpi_rev >= 0x20101)
 
+extern void sn_io_acpi_init(void);
+
 #endif /* _ASM_IA64_SN_ACPI_H */
