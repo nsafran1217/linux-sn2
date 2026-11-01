@@ -127,13 +127,23 @@ struct pci_root_info {
 static unsigned int new_space(u64 phys_base, int sparse)
 {
 	u64 mmio_base;
-	int i;
+	int i, first = 0;
 
 	if (phys_base == 0)
 		return 0;	/* legacy I/O port space */
 
+#ifdef CONFIG_IA64_SGI_SN2
+	/*
+	 * SN2 points space 0 at the VGA console's bus, and sn_io_addr() drops
+	 * ports below 64K other than the VGA ones.  Sharing space 0 would put
+	 * that bus's I/O BARs in the dropped range, so give it a space of its
+	 * own, as every other bus gets.
+	 */
+	first = 1;
+#endif
+
 	mmio_base = (u64) ioremap(phys_base, 0);
-	for (i = 0; i < num_io_spaces; i++)
+	for (i = first; i < num_io_spaces; i++)
 		if (io_space[i].mmio_base == mmio_base &&
 		    io_space[i].sparse == sparse)
 			return i;
