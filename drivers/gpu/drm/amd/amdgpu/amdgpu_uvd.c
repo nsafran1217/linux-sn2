@@ -1186,7 +1186,6 @@ int amdgpu_uvd_get_create_msg(struct amdgpu_ring *ring, uint32_t handle,
 	struct amdgpu_device *adev = ring->adev;
 	struct amdgpu_bo *bo = adev->uvd.ib_bo;
 	uint32_t *msg;
-	int i;
 
 	msg = amdgpu_bo_kptr(bo);
 	/* stitch together an UVD create msg */
@@ -1201,8 +1200,8 @@ int amdgpu_uvd_get_create_msg(struct amdgpu_ring *ring, uint32_t handle,
 	msg[8] = cpu_to_le32(0x00000440);
 	msg[9] = cpu_to_le32(0x00000000);
 	msg[10] = cpu_to_le32(0x01b37000);
-	for (i = 11; i < 1024; ++i)
-		msg[i] = cpu_to_le32(0x0);
+	/* the msg BO can be in VRAM, where memset() must not be used */
+	memset_io(&msg[11], 0, (1024 - 11) * sizeof(*msg));
 
 	return amdgpu_uvd_send_msg(ring, bo, true, fence);
 
@@ -1214,7 +1213,7 @@ int amdgpu_uvd_get_destroy_msg(struct amdgpu_ring *ring, uint32_t handle,
 	struct amdgpu_device *adev = ring->adev;
 	struct amdgpu_bo *bo = NULL;
 	uint32_t *msg;
-	int r, i;
+	int r;
 
 	if (direct) {
 		bo = adev->uvd.ib_bo;
@@ -1230,8 +1229,7 @@ int amdgpu_uvd_get_destroy_msg(struct amdgpu_ring *ring, uint32_t handle,
 	msg[1] = cpu_to_le32(0x00000002);
 	msg[2] = cpu_to_le32(handle);
 	msg[3] = cpu_to_le32(0x00000000);
-	for (i = 4; i < 1024; ++i)
-		msg[i] = cpu_to_le32(0x0);
+	memset_io(&msg[4], 0, (1024 - 4) * sizeof(*msg));
 
 	r = amdgpu_uvd_send_msg(ring, bo, direct, fence);
 
