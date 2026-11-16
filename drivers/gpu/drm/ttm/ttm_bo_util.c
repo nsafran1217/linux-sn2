@@ -33,6 +33,10 @@
 #include <linux/swap.h>
 #include <linux/vmalloc.h>
 
+#ifdef CONFIG_IA64_SGI_SN2
+#include <asm/machvec.h>
+#endif
+
 #include <drm/ttm/ttm_bo.h>
 #include <drm/ttm/ttm_placement.h>
 #include <drm/ttm/ttm_tt.h>
@@ -306,6 +310,18 @@ pgprot_t ttm_io_prot(struct ttm_buffer_object *bo, struct ttm_resource *res,
 	} else  {
 		caching = res->bus.caching;
 	}
+
+#ifdef CONFIG_IA64_SGI_SN2
+	/*
+	 * SN2: system memory the GPU reads by DMA must not be mapped WB.
+	 * Modified lines make each DMA read an RDEXC intervention, and those
+	 * overflow the FSB (FSB_PROTO_ERR, MCA).  WC leaves no cached lines
+	 * and is ~70x faster than UC here, so use it for every caching mode.
+	 * VRAM is made UC by the platform's pfnmap_setup_cachemode().
+	 */
+	if (ia64_is_sn2() && man->use_tt)
+		return pgprot_writecombine(tmp);
+#endif
 
 	return ttm_prot_from_caching(caching, tmp);
 }
