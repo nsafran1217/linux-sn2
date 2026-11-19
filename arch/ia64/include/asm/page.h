@@ -26,6 +26,16 @@
 
 #include <vdso/page.h>
 
+#ifdef CONFIG_IA64_SGI_SN2
+/*
+ * SN2 fixes up the memory attribute of user pfn mappings, see
+ * arch/ia64/sn/kernel/iomv.c (a no-op when a combined kernel runs on
+ * another platform).  Defined here because struct vm_area_struct depends
+ * on it.
+ */
+#define __HAVE_PFNMAP_TRACKING
+#endif
+
 #define PERCPU_PAGE_SHIFT	18	/* log2() of max. size of per-CPU area */
 #define PERCPU_PAGE_SIZE	(__IA64_UL_CONST(1) << PERCPU_PAGE_SHIFT)
 

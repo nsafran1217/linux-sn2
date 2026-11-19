@@ -7,10 +7,12 @@
  */
 
 #include <linux/module.h>
+#include <linux/pgtable.h>
 #include <linux/acpi.h>
 #include <asm/io.h>
 #include <asm/delay.h>
 #include <asm/vga.h>
+#include <asm/machvec.h>
 #include <asm/sn/io.h>
 #include <asm/sn/nodepda.h>
 #include <asm/sn/simulator.h>
@@ -18,6 +20,8 @@
 #include <asm/sn/sn_cpuid.h>
 #include <asm/sn/shub_mmr.h>
 #include <asm/sn/acpi.h>
+#include <asm/sn/addrs.h>
+#include <asm/sn/arch.h>
 
 #define IS_LEGACY_VGA_IOPORT(p) \
 	(((p) >= 0x3b0 && (p) <= 0x3bb) || ((p) >= 0x3c0 && (p) <= 0x3df))
@@ -85,3 +89,50 @@ void __sn_mmiowb(void)
 }
 
 EXPORT_SYMBOL(__sn_mmiowb);
+
+/*
+ * Memory attribute for pfn mappings (remap_pfn_range(), vmf_insert_pfn*()).
+ *
+ * Only cacheable memory space (AS_CAC) may be mapped write-combined.
+ * Everything else a pfn mapping can reach is PIO or MMR space, and SHub1
+ * routes a coalesced WC line write to PIO space as a memory request: XN IILB
+ * CHIPLET_NOMATCH, PIO timeout, hang.  "Porting Device Drivers to SGI Altix"
+ * (007-4520-007) requires uncached access there (p.25) and has drivers mmap a
+ * PCI BAR with pgprot_noncached() (p.68).
+ *
+ * This is applied on SHub2 too but has only been tested on SHub1.  SHub2 has
+ * write-combining request types that SHub1 lacks and may not need it.
+ *
+ * Generic code asks for WC on device memory all the same: TTM for a GPU's
+ * VRAM BAR, fbdev, the PCI sysfs resourceN_wc files.  Turn those requests
+ * into UC here.  Kernel mappings need no such fixup because ia64 has no
+ * ioremap_wc(), it falls back to ioremap().
+ */
+static void sn_pfnmap_fix_cachemode(unsigned long pfn, pgprot_t *prot)
+{
+	u64 paddr = (u64)pfn << PAGE_SHIFT;
+
+	if (!ia64_is_sn2())
+		return;
+
+	if ((pgprot_val(*prot) & _PAGE_MA_MASK) == _PAGE_MA_WC &&
+	    (paddr & AS_MASK) != AS_CAC_SPACE)
+		*prot = pgprot_noncached(*prot);
+}
+
+int pfnmap_setup_cachemode(unsigned long pfn, unsigned long size,
+			   pgprot_t *prot)
+{
+	sn_pfnmap_fix_cachemode(pfn, prot);
+	return 0;
+}
+
+int pfnmap_track(unsigned long pfn, unsigned long size, pgprot_t *prot)
+{
+	sn_pfnmap_fix_cachemode(pfn, prot);
+	return 0;
+}
+
+void pfnmap_untrack(unsigned long pfn, unsigned long size)
+{
+}
