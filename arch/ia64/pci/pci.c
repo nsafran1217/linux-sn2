@@ -26,7 +26,9 @@
 
 #include <asm/page.h>
 #include <asm/io.h>
+#include <asm/machvec.h>
 #include <asm/sal.h>
+#include <asm/sn/acpi.h>
 #include <asm/smp.h>
 #include <asm/irq.h>
 #include <asm/hw_irq.h>
@@ -124,13 +126,22 @@ struct pci_root_info {
 static unsigned int new_space(u64 phys_base, int sparse)
 {
 	u64 mmio_base;
-	int i;
+	int i, first = 0;
 
 	if (phys_base == 0)
 		return 0;	/* legacy I/O port space */
 
+	/*
+	 * SN2 points space 0 at the VGA console's bus, and sn_io_addr() drops
+	 * ports below 64K other than the VGA ones.  Sharing space 0 would put
+	 * that bus's I/O BARs in the dropped range, so give it a space of its
+	 * own, as every other bus gets.
+	 */
+	if (ia64_is_sn2())
+		first = 1;
+
 	mmio_base = (u64) ioremap(phys_base, 0);
-	for (i = 0; i < num_io_spaces; i++)
+	for (i = first; i < num_io_spaces; i++)
 		if (io_space[i].mmio_base == mmio_base &&
 		    io_space[i].sparse == sparse)
 			return i;
@@ -347,6 +358,16 @@ static void pcibios_fixup_bridge_resources(struct pci_dev *dev)
 	if (!dev->bus)
 		return;
 
+	/*
+	 * Without ACPI IO support the root bus only has the legacy windows,
+	 * so a window the PROM programmed into a bridge can't be claimed: it
+	 * holds a raw bus address with no parent to put it under.  A failed
+	 * claim also writes the window back disabled, which cuts off the
+	 * devices behind the bridge.  Leave it as the PROM set it.
+	 */
+	if (ia64_is_sn2() && !SN_ACPI_BASE_SUPPORT())
+		return;
+
 	for (idx = PCI_BRIDGE_RESOURCES; idx < PCI_NUM_RESOURCES; idx++) {
 		struct resource *r = &dev->resource[idx];
 
@@ -370,6 +391,8 @@ void pcibios_fixup_bus(struct pci_bus *b)
 	}
 	list_for_each_entry(dev, &b->devices, bus_list)
 		pcibios_fixup_device_resources(dev);
+	if (ia64_is_sn2())
+		sn_pci_fixup_bus(b);
 }
 
 void pcibios_add_bus(struct pci_bus *bus)

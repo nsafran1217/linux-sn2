@@ -910,3 +910,13 @@ EXPORT_SYMBOL(acpi_unregister_ioapic);
  */
 int acpi_suspend_lowlevel(void) { return 0; }
 
+
+/*
+ * Called from acpi_init() once the namespace is loaded and before
+ * acpi_scan_init() binds the PCI root bridges.
+ */
+void __init acpi_arch_init(void)
+{
+	if (ia64_is_sn2())
+		sn_io_acpi_init();
+}
