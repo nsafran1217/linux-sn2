@@ -136,6 +136,7 @@ Subsystem-specific APIs
    s390-drivers
    scsi
    serial/index
+   sgi-ioc4
    sm501
    soundwire/index
    spi
