@@ -36,6 +36,13 @@ config SGI_MBCS
 	  If you have an SGI Altix with an attached SABrick
 	  say Y or M here, otherwise say N.
 
+config AGP_SGI_TIOCA
+	tristate "SGI TIO chipset AGP support"
+	depends on AGP && IA64_SGI_SN2
+	help
+	  This option gives you AGP GART support for the SGI TIO chipset
+	  for IA64 processors.
+
 config SERIAL_SGI_L1_CONSOLE
 	bool "SGI Altix L1 serial console support"
 	depends on IA64_SGI_SN2
