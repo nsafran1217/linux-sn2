@@ -29,6 +29,7 @@
 #include <asm/delay.h>
 #include <asm/efi.h>
 #include <asm/hw_irq.h>
+#include <asm/machvec.h>
 #include <asm/ptrace.h>
 #include <asm/sal.h>
 #include <asm/sections.h>
@@ -179,6 +180,9 @@ timer_interrupt (int irq, void *dev_id)
 	if (cpu_is_offline(smp_processor_id())) {
 		return IRQ_HANDLED;
 	}
+
+	if (ia64_is_sn2())
+		sn_timer_interrupt(irq, dev_id);
 
 	new_itm = local_cpu_data->itm_next;
 

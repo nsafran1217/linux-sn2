@@ -48,6 +48,7 @@
 #include <asm/efi.h>
 #include <asm/io.h>
 #include <asm/irq.h>
+#include <asm/machvec.h>
 #include <asm/mca.h>
 #include <asm/page.h>
 #include <asm/perf_event.h>
@@ -683,6 +684,9 @@ int __cpu_disable(void)
 		printk ("Your platform does not support removal of BSP\n");
 		return (-EBUSY);
 	}
+
+	if (ia64_is_sn2() && !sn_cpu_disable_allowed(cpu))
+		return -EBUSY;
 
 	set_cpu_online(cpu, false);
 

@@ -14,6 +14,8 @@
 
 #include <linux/percpu.h>
 
+#include <asm/machvec.h>
+
 struct task_struct;
 
 /*
@@ -75,6 +77,8 @@ extern void ia64_load_spec_defer(struct task_struct *task);
 	if (unlikely((current->thread.flags & IA64_THREAD_MIGRATION) &&	       \
 		     (task_cpu(current) !=				       \
 		      		      task_thread_info(current)->last_cpu))) { \
+		if (ia64_is_sn2())					       \
+			sn_migrate(current);				       \
 		task_thread_info(current)->last_cpu = task_cpu(current);       \
 	}								       \
 } while (0)
