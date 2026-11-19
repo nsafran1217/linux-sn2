@@ -413,7 +413,20 @@ pcibr_dma_map_consistent(struct pci_dev * hwdev, unsigned long phys_addr,
 		dma_handle = pcibr_dmatrans_direct64(pcidev_info, phys_addr,
 					    PCI64_ATTR_BAR, dma_flags);
 	} else {
-		dma_handle = (dma_addr_t) pcibr_dmamap_ate32(pcidev_info,
+		/*
+		 * A consistent mapping normally gets ATEs with the barrier
+		 * attribute.  There are only 1024 of them (16 MB), so a
+		 * caller that allocates in bulk asks for a direct32 address,
+		 * which has no barrier and costs nothing.  It fails outside
+		 * the direct32 window and on a PCI-X bus.
+		 */
+		dma_handle = 0;
+		if (dma_flags & SN_DMA_DIRECT32)
+			dma_handle = pcibr_dmatrans_direct32(pcidev_info,
+							     phys_addr, size,
+							     0, dma_flags);
+		if (!dma_handle)
+			dma_handle = (dma_addr_t) pcibr_dmamap_ate32(pcidev_info,
 						    phys_addr, size,
 						    PCI32_ATE_BAR, dma_flags);
 	}

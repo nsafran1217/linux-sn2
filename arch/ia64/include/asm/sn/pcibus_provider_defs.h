@@ -63,6 +63,7 @@ struct sn_pcibus_provider {
 #define     SN_DMA_ADDR_PHYS	1	/* address is an xio address. */
 #define     SN_DMA_ADDR_XIO	2	/* address is phys memory */
 #define SN_DMA_MSI		0x10	/* Bus address is to be used for MSI */
+#define SN_DMA_DIRECT32		0x20	/* Consistent map: prefer a direct32 address to ATEs */
 
 extern struct sn_pcibus_provider *sn_pci_provider[];
 #endif				/* _ASM_IA64_SN_PCI_PCIBUS_PROVIDER_H */

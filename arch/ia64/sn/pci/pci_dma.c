@@ -14,6 +14,7 @@
 #include <linux/dma-mapping.h>
 #include <linux/dma-map-ops.h>
 #include <asm/dma.h>
+#include <asm/sn/arch.h>
 #include <asm/sn/intr.h>
 #include <asm/sn/pcibus_provider_defs.h>
 #include <asm/sn/pcidev.h>
@@ -33,6 +34,20 @@
 #ifndef DMA_ATTR_WRITE_BARRIER
 #define DMA_ATTR_WRITE_BARRIER		(1UL << 0)
 #endif
+
+/*
+ * GPU drivers map the system pages they hand to the device uncached or
+ * write-combined, on SN2 as on every other ia64 platform (TTM), and the
+ * GPU reads them by DMA while the CPU keeps writing them.  Lines of such a
+ * page that are still Modified in a CPU cache, from zeroing it through the
+ * cached identity map, make each DMA read an RDEXC intervention; enough of
+ * them overflow the FSB (FSB_PROTO_ERR, MCA).  So coherent memory for a
+ * display device is flushed from the caches after it is zeroed.
+ */
+static inline bool sn_dma_is_display(struct pci_dev *pdev)
+{
+	return (pdev->class >> 16) == PCI_BASE_CLASS_DISPLAY;
+}
 
 #define SG_ENT_VIRT_ADDRESS(sg)	(sg_virt((sg)))
 #define SG_ENT_PHYS_ADDRESS(SG)	virt_to_phys(SG_ENT_VIRT_ADDRESS(SG))
@@ -100,6 +115,7 @@ static void *sn_dma_alloc_coherent(struct device *dev, size_t size,
 	void *cpuaddr;
 	unsigned long phys_addr;
 	int node;
+	int dma_flags = SN_DMA_ADDR_PHYS;
 	struct pci_dev *pdev;
 	struct pcidev_info *pcidev_info;
 	struct sn_pcibus_provider *provider;
@@ -112,6 +128,20 @@ static void *sn_dma_alloc_coherent(struct device *dev, size_t size,
 	if (unlikely(!pcidev_info))
 		return NULL;
 	provider = pcidev_info->pdi_provider;
+
+	/*
+	 * A GPU driver allocates all of its buffer pages here when
+	 * drm_need_swiotlb() is true, which on SN2 depends on how many
+	 * address bits the NASIDs in use take up.  Without a 64-bit mask
+	 * each of those pages would take ATEs on a PIC bridge.  Allocate them
+	 * inside the direct32 window (ZONE_DMA32) and ask for a direct32
+	 * address instead.  Only display devices do this: everything else
+	 * keeps the barrier attribute that the ATE mapping carries.
+	 */
+	if (sn_dma_is_display(pdev) && dev->coherent_dma_mask != ~0UL) {
+		flags |= __GFP_DMA32;
+		dma_flags |= SN_DMA_DIRECT32;
+	}
 
 	/*
 	 * Allocate the memory.
@@ -132,6 +162,8 @@ static void *sn_dma_alloc_coherent(struct device *dev, size_t size,
 		return NULL;
 
 	memset(cpuaddr, 0x0, size);
+	if (sn_dma_is_display(pdev))
+		sn_flush_all_caches((long)cpuaddr, size);
 
 	/* physical addr. of the memory we just got */
 	phys_addr = __pa(cpuaddr);
@@ -143,7 +175,7 @@ static void *sn_dma_alloc_coherent(struct device *dev, size_t size,
 	 */
 
 	*dma_handle = provider->dma_map_consistent(pdev, phys_addr, size,
-						   SN_DMA_ADDR_PHYS);
+						   dma_flags);
 	if (!*dma_handle) {
 		printk(KERN_ERR "%s: out of ATEs\n", __func__);
 		free_pages((unsigned long)cpuaddr, get_order(size));
