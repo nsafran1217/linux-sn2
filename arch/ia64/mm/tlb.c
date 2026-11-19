@@ -32,6 +32,7 @@
 #include <asm/dma.h>
 #include <asm/processor.h>
 #include <asm/sal.h>
+#include <asm/machvec.h>
 #include <asm/tlb.h>
 
 static struct {
@@ -338,7 +339,10 @@ __flush_tlb_range (struct vm_area_struct *vma, unsigned long start,
 #ifdef CONFIG_SMP
 	if (mm != current->active_mm ||
 	    !cpumask_equal(mm_cpumask(mm), cpumask_of(smp_processor_id()))) {
-		ia64_global_tlb_purge(mm, start, end, nbits);
+		if (ia64_is_sn2())
+			sn2_global_tlb_purge(mm, start, end, nbits);
+		else
+			ia64_global_tlb_purge(mm, start, end, nbits);
 		preempt_enable();
 		return;
 	}

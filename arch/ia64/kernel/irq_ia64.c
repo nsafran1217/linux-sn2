@@ -630,12 +630,19 @@ init_IRQ (void)
 		sn_irq_init();
 }
 
+/* An IA64_SGI_SN2_ONLY kernel gets ia64_send_ipi() from sn2_smp.c. */
+#ifndef CONFIG_IA64_SGI_SN2_ONLY
 void
 ia64_send_ipi (int cpu, int vector, int delivery_mode, int redirect)
 {
 	void __iomem *ipi_addr;
 	unsigned long ipi_data;
 	unsigned long phys_cpu_id;
+
+	if (ia64_is_sn2()) {
+		sn2_send_IPI(cpu, vector, delivery_mode, redirect);
+		return;
+	}
 
 	phys_cpu_id = cpu_physical_id(cpu);
 
@@ -648,3 +655,4 @@ ia64_send_ipi (int cpu, int vector, int delivery_mode, int redirect)
 
 	writeq(ipi_data, ipi_addr);
 }
+#endif
