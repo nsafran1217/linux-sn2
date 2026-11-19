@@ -38,6 +38,7 @@
 #include <asm/intrinsics.h>
 #include <asm/io.h>
 #include <asm/hw_irq.h>
+#include <asm/machvec.h>
 #include <asm/tlbflush.h>
 
 #include "irq.h"
@@ -625,6 +626,8 @@ init_IRQ (void)
 				    "irq_move");
 	}
 #endif
+	if (ia64_is_sn2())
+		sn_irq_init();
 }
 
 void

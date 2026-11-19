@@ -12,6 +12,7 @@
 #include <linux/types.h>
 #include <linux/profile.h>
 
+#include <asm/machvec.h>
 #include <asm/ptrace.h>
 #include <asm/smp.h>
 
@@ -151,6 +152,9 @@ static inline void ia64_native_resend_irq(unsigned int vector)
 static inline ia64_vector
 irq_to_vector (int irq)
 {
+	/* SN2 has no IOSAPIC: its IRQ numbers are the vector numbers. */
+	if (ia64_is_sn2())
+		return irq < IA64_NUM_VECTORS ? (ia64_vector)irq : 0;
 	return irq_cfg[irq].vector;
 }
 
@@ -162,6 +166,8 @@ irq_to_vector (int irq)
 static inline unsigned int
 local_vector_to_irq (ia64_vector vec)
 {
+	if (ia64_is_sn2())
+		return (unsigned int)vec;
 	return __this_cpu_read(vector_irq[vec]);
 }
 

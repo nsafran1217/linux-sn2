@@ -8,6 +8,7 @@
 #include <linux/msi.h>
 #include <linux/dmar.h>
 #include <asm/smp.h>
+#include <asm/machvec.h>
 #include <asm/msidef.h>
 
 static struct irq_chip	ia64_msi_chip;
@@ -49,6 +50,9 @@ int arch_setup_msi_irq(struct pci_dev *pdev, struct msi_desc *desc)
 	unsigned long	dest_phys_id;
 	int	irq, vector;
 
+	if (ia64_is_sn2())
+		return sn_setup_msi_irq(pdev, desc);
+
 	irq = create_irq();
 	if (irq < 0)
 		return irq;
@@ -79,6 +83,10 @@ int arch_setup_msi_irq(struct pci_dev *pdev, struct msi_desc *desc)
 
 void arch_teardown_msi_irq(unsigned int irq)
 {
+	if (ia64_is_sn2()) {
+		sn_teardown_msi_irq(irq);
+		return;
+	}
 	destroy_irq(irq);
 }
 
